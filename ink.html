@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>黑貓之爪：蟑螂大作戰 (Cat Paw vs Cockroaches)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+TC:wght@500;700;900&display=swap');
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
+            background-color: #0d0f17;
+            color: #ffffff;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Prevent default cursor inside game canvas area */
+        #gameCanvas {
+            cursor: none;
+        }
+
+        /* Screen Shake Effect */
+        .shake {
+            animation: shake 0.15s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 2px, 0); }
+            20%, 80% { transform: translate3d(4px, -3px, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 4px, 0); }
+            40%, 60% { transform: translate3d(5px, -2px, 0); }
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(18, 22, 36, 0.82);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(244, 114, 182, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .neon-border {
+            box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+        }
+
+        .neon-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .neon-btn:hover {
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.7);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .neon-btn:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        .text-glow-pink {
+            text-shadow: 0 0 12px rgba(244, 114, 182, 0.8), 0 0 25px rgba(236, 72, 153, 0.4);
+        }
+        .text-glow-yellow {
+            text-shadow: 0 0 12px rgba(250, 204, 21, 0.8), 0 0 25px rgba(234, 179, 8, 0.4);
+        }
+
+        /* Rank Badge Animations */
+        .rank-s { color: #f43f5e; text-shadow: 0 0 20px #f43f5e; }
+        .rank-a { color: #fbbf24; text-shadow: 0 0 20px #fbbf24; }
+        .rank-b { color: #38bdf8; text-shadow: 0 0 20px #38bdf8; }
+        .rank-c { color: #94a3b8; text-shadow: 0 0 10px #94a3b8; }
+    </style>
+</head>
+<body class="w-screen h-screen flex justify-center items-center relative overflow-hidden select-none bg-slate-950">
+
+    <!-- Game View Container -->
+    <div id="gameContainer" class="relative w-full h-full max-w-5xl max-h-[900px] flex justify-center items-center shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border border-pink-500/30">
+        
+        <!-- Main Canvas Layer -->
+        <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+        <!-- Dynamic HUD (Heads-Up Display) -->
+        <div id="hud" class="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none hidden z-10">
+            <!-- Left Info Panel: Score & Combo -->
+            <div class="flex flex-col gap-2">
+                <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-4 border-l-4 border-pink-500">
+                    <i class="fa-solid fa-crosshairs text-pink-400 text-xl"></i>
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SCORE</div>
+                        <div id="scoreText" class="text-2xl md:text-3xl font-black text-white leading-none tracking-wider">0</div>
+                    </div>
+                </div>
+
+                <div id="comboBadge" class="glass-panel px-4 py-1.5 rounded-xl flex items-center gap-2 border-l-4 border-yellow-400 transition-all duration-200 transform opacity-0 scale-90">
+                    <i class="fa-solid fa-bolt text-yellow-400 text-sm"></i>
+                    <span class="text-xs font-black text-yellow-400 tracking-wider">COMBO</span>
+                    <span id="comboText" class="text-lg font-black text-yellow-400 text-glow-yellow">x0</span>
+                </div>
+            </div>
+
+            <!-- Center Info Panel: Timer / Mode Badge -->
+            <div class="glass-panel px-6 py-3 rounded-2xl flex flex-col items-center border-t-2 border-pink-500/50">
+                <div id="timerLabel" class="text-[10px] font-bold text-pink-300 uppercase tracking-widest mb-0.5">TIME REMAINING</div>
+                <div id="timerText" class="text-3xl md:text-4xl font-black text-pink-400 tracking-widest text-glow-pink">30.0s</div>
+            </div>
+
+            <!-- Right Info Panel: Accuracy & TPS -->
+            <div class="flex flex-col gap-2 items-end">
+                <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-4 border-r-4 border-cyan-400">
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ACCURACY</div>
+                        <div id="accuracyText" class="text-2xl md:text-3xl font-black text-cyan-300 leading-none">100%</div>
+                    </div>
+                    <i class="fa-solid fa-bullseye text-cyan-400 text-xl"></i>
+                </div>
+
+                <div class="glass-panel px-4 py-1.5 rounded-xl flex items-center gap-2 border-r-4 border-purple-400">
+                    <span class="text-xs font-bold text-purple-300">SPEED:</span>
+                    <span id="tpsText" class="text-sm font-black text-purple-300">0.0 KPS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Mute Button -->
+        <button id="soundToggleBtn" class="absolute top-4 right-4 z-30 w-11 h-11 rounded-full glass-panel flex justify-center items-center text-slate-300 hover:text-white transition duration-200 hover:scale-110 active:scale-95">
+            <i id="soundIcon" class="fa-solid fa-volume-high text-pink-400"></i>
+        </button>
+
+        <!-- SCREEN 1: Start Menu -->
+        <div id="startScreen" class="absolute inset-0 z-20 glass-panel flex flex-col justify-center items-center p-6 text-center">
+            <!-- Game Title Graphic -->
+            <div class="mb-8 relative">
+                <div class="inline-block px-4 py-1 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold tracking-widest mb-3 uppercase">
+                    Cat Paw Aim Trainer
+                </div>
+                <h1 class="text-4xl sm:text-6xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-fuchsia-400 to-indigo-400 text-glow-pink mb-2">
+                    黑貓之爪：蟑螂大作戰
+                </h1>
+                <p class="text-slate-300 text-sm md:text-base font-medium tracking-widest">
+                    化身黑貓之爪！揮舞粉紅肉墊，快速拍扁瘋狂狂奔的蟑螂！
+                </p>
+            </div>
+
+            <!-- Mode Selection Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-8">
+                <!-- 30s Rush Mode -->
+                <button id="btnMode30s" class="p-5 rounded-2xl glass-panel border-2 border-pink-500/60 hover:border-pink-400 text-left transition duration-200 group relative overflow-hidden text-white flex flex-col justify-between">
+                    <div class="absolute -right-4 -bottom-4 text-pink-500/10 text-7xl font-black group-hover:scale-110 transition duration-300">30S</div>
+                    <div>
+                        <div class="flex items-center gap-2 font-bold text-pink-400 text-lg mb-1">
+                            <i class="fa-solid fa-stopwatch"></i> 30秒衝刺極限
+                        </div>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Aim Lab 經典 Gridshot 玩法！畫面永遠維持蟑螂數量，挑戰高精準度與極速連擊！
+                        </p>
+                    </div>
+                    <div class="mt-4 flex items-center text-xs font-bold text-pink-300 group-hover:translate-x-1 transition duration-200">
+                        點擊開始極限挑戰 <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </div>
+                </button>
+
+                <!-- Endless Practice Mode -->
+                <button id="btnModeEndless" class="p-5 rounded-2xl glass-panel border-2 border-indigo-500/40 hover:border-indigo-400 text-left transition duration-200 group relative overflow-hidden text-white flex flex-col justify-between">
+                    <div class="absolute -right-4 -bottom-4 text-indigo-500/10 text-7xl font-black group-hover:scale-110 transition duration-300">∞</div>
+                    <div>
+                        <div class="flex items-center gap-2 font-bold text-indigo-400 text-lg mb-1">
+                            <i class="fa-solid fa-infinity"></i> 無盡打蟑螂模式
+                        </div>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            沒有時間限制，無壓力練習槍法（爪法）。隨時練反應速度與準心追蹤！
+                        </p>
+                    </div>
+                    <div class="mt-4 flex items-center text-xs font-bold text-indigo-300 group-hover:translate-x-1 transition duration-200">
+                        開始輕鬆練習 <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- High Scores Display -->
+            <div class="flex gap-6 text-xs text-slate-400 font-bold bg-slate-900/60 px-6 py-3 rounded-full border border-slate-800">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-yellow-400"></i> 30s 最高得分: 
+                    <span id="bestScoreText" class="text-yellow-400 text-sm font-black">0</span>
+                </span>
+                <span class="text-slate-700">|</span>
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-pink-400"></i> 最高連擊: 
+                    <span id="bestComboText" class="text-pink-400 text-sm font-black">0</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: Detailed Game Over Results -->
+        <div id="gameOverScreen" class="absolute inset-0 z-20 glass-panel flex flex-col justify-center items-center p-6 text-center hidden">
+            <!-- Rank Badge Header -->
+            <div class="mb-4">
+                <div id="rankTitle" class="text-xs font-black tracking-widest uppercase mb-1 text-slate-400">EVALUATION RANK</div>
+                <div id="rankBadge" class="text-6xl md:text-7xl font-black tracking-tighter mb-1 rank-s">S-RANK</div>
+                <div id="rankSubtitle" class="text-sm font-bold text-slate-300">喵神降臨！蟑螂終結者</div>
+            </div>
+
+            <!-- Detailed Stats Grid -->
+            <div class="grid grid-cols-2 gap-3 w-full max-w-md mb-6 text-left">
+                <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">最終得分 (Final Score)</div>
+                    <div id="resScore" class="text-2xl font-black text-yellow-400">0</div>
+                </div>
+
+                <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">命中率 (Accuracy)</div>
+                    <div id="resAccuracy" class="text-2xl font-black text-cyan-400">0%</div>
+                </div>
+
+                <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">擊殺/空拍 (Hits / Misses)</div>
+                    <div class="text-lg font-black text-white">
+                        <span id="resHits" class="text-emerald-400">0</span> / <span id="resMisses" class="text-rose-400">0</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">平均反應速度 (Avg Reaction)</div>
+                    <div id="resReaction" class="text-lg font-black text-purple-300">0 ms</div>
+                </div>
+
+                <div class="glass-panel p-3.5 rounded-xl border border-slate-800 col-span-2 flex justify-between items-center">
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">最高連續拍擊 (Max Combo)</div>
+                        <div id="resMaxCombo" class="text-xl font-black text-pink-400">x0</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">每秒擊殺目標 (Kills/Sec)</div>
+                        <div id="resKPS" class="text-xl font-black text-indigo-300">0.0 KPS</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 w-full max-w-md">
+                <button id="restartBtn" class="neon-btn flex-1 py-3.5 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> 再戰一局
+                </button>
+                <button id="mainMenuBtn" class="px-6 py-3.5 rounded-2xl glass-panel hover:bg-slate-800 font-bold text-slate-300 text-base transition">
+                    回主選單
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Game Script & Synthesizer Logic -->
+    <script>
+        /**
+         * Web Audio API Synthesizer
+         * Dynamically generates sound effects for swatting, hits, misses, and UI.
+         */
+        class GameAudioSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            // Swatting / Paw Swoosh (Miss Sound)
+            playSwoosh() {
+                if (this.muted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.12;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.12);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start();
+            }
+
+            // Splat / Cockroach Hit Sound with combo pitch modulation
+            playSplat(combo = 1) {
+                if (this.muted || !this.ctx) return;
+                
+                // 1. Noise burst for squish
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(this.ctx.destination);
+
+                // 2. Tonal laser/zap pulse with pitch scale according to combo
+                const osc = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+
+                const pitchMultiplier = Math.min(2.5, 1 + combo * 0.05);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(350 * pitchMultiplier, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80 * pitchMultiplier, this.ctx.currentTime + 0.1);
+
+                oscGain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
+                osc.connect(oscGain);
+                oscGain.connect(this.ctx.destination);
+
+                noise.start();
+                osc.start();
+            }
+
+            // Bonus Flying Cockroach Zap Sound
+            playBonusZap() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.18);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.18);
+            }
+
+            // Game End Fanfare
+            playEndFanfare() {
+                if (this.muted || !this.ctx) return;
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C E G C
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+
+                    const startTime = this.ctx.currentTime + idx * 0.08;
+                    gain.gain.setValueAtTime(0.2, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.3);
+                });
+            }
+        }
+
+        const synth = new GameAudioSynth();
+
+        // Canvas & Container Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('gameContainer');
+
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+
+        function resizeCanvas() {
+            canvasWidth = gameContainer.clientWidth;
+            canvasHeight = gameContainer.clientHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Mouse & Paw Controller State
+        const mouse = {
+            x: canvasWidth / 2,
+            y: canvasHeight / 2,
+            isDown: false,
+            recoilTimer: 0, // Recoil animation offset
+            recoilMax: 10
+        };
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        // Game Logic State
+        let gameMode = '30S'; // '30S' or 'ENDLESS'
+        let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let hits = 0;
+        let misses = 0;
+        let totalClicks = 0;
+        let startTime = 0;
+        let gameTimer = 30.0;
+        let animationFrameId = null;
+
+        let highScores = {
+            score: parseInt(localStorage.getItem('cat_paw_best_score') || '0'),
+            combo: parseInt(localStorage.getItem('cat_paw_best_combo') || '0')
+        };
+
+        // Gridshot Target Spawning System
+        const GRID_ROWS = 4;
+        const GRID_COLS = 5;
+        const TARGET_COUNT = 4; // Always maintain 4 active cockroaches on screen
+        let activeCockroaches = [];
+        let splatParticles = [];
+        let floatingTexts = [];
+        let spawnTimestamps = []; // For calculating reaction time
+
+        /**
+         * Cockroach Entity
+         */
+        class Cockroach {
+            constructor(gridX, gridY, isFlying = false) {
+                this.gridX = gridX;
+                this.gridY = gridY;
+                this.isFlying = isFlying;
+                
+                this.radius = isFlying ? 22 : 26;
+                this.width = this.radius * 2;
+                this.height = this.radius * 2.4;
+
+                // Calculate position in tile center
+                const cellW = canvasWidth / GRID_COLS;
+                const cellH = canvasHeight / GRID_ROWS;
+                
+                this.targetX = cellW * gridX + cellW / 2;
+                this.targetY = cellH * gridY + cellH / 2;
+                
+                this.x = this.targetX;
+                this.y = this.targetY;
+
+                // Jittery movement vector
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = isFlying ? 4.5 : 2.5;
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+
+                this.spawnTime = performance.now();
+                this.legAngle = 0;
+                this.wingFlap = 0;
+            }
+
+            update() {
+                // Jitter/scuttle movement bounded around target grid cell
+                const cellW = canvasWidth / GRID_COLS;
+                const cellH = canvasHeight / GRID_ROWS;
+                const minX = cellW * this.gridX + this.radius + 10;
+                const maxX = cellW * (this.gridX + 1) - this.radius - 10;
+                const minY = cellH * this.gridY + this.radius + 10;
+                const maxY = cellH * (this.gridY + 1) - this.radius - 10;
+
+                // Randomly twitch or change direction
+                if (Math.random() < 0.05) {
+                    this.angle += (Math.random() - 0.5) * 1.8;
+                    this.vx = Math.cos(this.angle) * this.speed;
+                    this.vy = Math.sin(this.angle) * this.speed;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce inside grid cell
+                if (this.x < minX || this.x > maxX) {
+                    this.vx *= -1;
+                    this.x = Math.max(minX, Math.min(maxX, this.x));
+                }
+                if (this.y < minY || this.y > maxY) {
+                    this.vy *= -1;
+                    this.y = Math.max(minY, Math.min(maxY, this.y));
+                }
+
+                this.angle = Math.atan2(this.vy, this.vx) + Math.PI / 2;
+                this.legAngle += 0.4;
+                if (this.isFlying) this.wingFlap += 0.6;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                const r = this.radius;
+
+                // 1. Cockroach Legs
+                ctx.strokeStyle = '#451a03';
+                ctx.lineWidth = 2.5;
+                for (let i = -1; i <= 1; i++) {
+                    const legOffset = Math.sin(this.legAngle + i) * 6;
+                    // Left legs
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.4, i * 10);
+                    ctx.lineTo(-r * 1.1 - legOffset, i * 12 - 5);
+                    ctx.stroke();
+                    // Right legs
+                    ctx.beginPath();
+                    ctx.moveTo(r * 0.4, i * 10);
+                    ctx.lineTo(r * 1.1 + legOffset, i * 12 - 5);
+                    ctx.stroke();
+                }
+
+                // 2. Wings (If Flying Cockroach)
+                if (this.isFlying) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1;
+                    const flap = Math.sin(this.wingFlap) * 0.5 + 0.8;
+                    
+                    // Left Wing
+                    ctx.beginPath();
+                    ctx.ellipse(-r * 0.8, -2, r * 0.9, r * 0.4 * flap, -Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+
+                    // Right Wing
+                    ctx.beginPath();
+                    ctx.ellipse(r * 0.8, -2, r * 0.9, r * 0.4 * flap, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                }
+
+                // 3. Body & Shell Gradient
+                const gradient = ctx.createLinearGradient(0, -r, 0, r);
+                if (this.isFlying) {
+                    gradient.addColorStop(0, '#d97706');
+                    gradient.addColorStop(0.6, '#78350f');
+                    gradient.addColorStop(1, '#451a03');
+                } else {
+                    gradient.addColorStop(0, '#78350f');
+                    gradient.addColorStop(0.5, '#451a03');
+                    gradient.addColorStop(1, '#1c0a00');
+                }
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, r * 0.65, r * 1.05, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#290d00';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Shell Head
+                ctx.beginPath();
+                ctx.ellipse(0, -r * 0.85, r * 0.45, r * 0.35, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#290d00';
+                ctx.fill();
+
+                // Long Antennae
+                ctx.strokeStyle = '#78350f';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-3, -r * 1.1);
+                ctx.quadraticCurveTo(-r * 1.2, -r * 1.8, -r * 1.5, -r * 2.1);
+                ctx.moveTo(3, -r * 1.1);
+                ctx.quadraticCurveTo(r * 1.2, -r * 1.8, r * 1.5, -r * 2.1);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        /**
+         * Particle Effects on Hit
+         */
+        function spawnSplat(x, y, isFlying = false) {
+            const count = 18;
+            const mainColor = isFlying ? '#f59e0b' : '#84cc16'; // Yellow goo or green goo
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 7 + 2;
+                splatParticles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.random() * 4 + 2,
+                    color: Math.random() > 0.3 ? mainColor : '#451a03',
+                    alpha: 1.0,
+                    decay: Math.random() * 0.04 + 0.02
+                });
+            }
+        }
+
+        /**
+         * Floating Score Text
+         */
+        function addFloatingText(x, y, text, color = '#f43f5e') {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                alpha: 1.0,
+                vy: -2.5
+            });
+        }
+
+        /**
+         * Spawn new target in a unique grid position
+         */
+        function spawnTargetInGrid() {
+            // Get all taken grid coordinates
+            const taken = new Set(activeCockroaches.map(c => `${c.gridX},${c.gridY}`));
+            const available = [];
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (!taken.has(`${c},${r}`)) {
+                        available.push({ x: c, y: r });
+                    }
+                }
+            }
+
+            if (available.length > 0) {
+                const pos = available[Math.floor(Math.random() * available.length)];
+                const isFlying = Math.random() < 0.2; // 20% flying cockroach chance
+                activeCockroaches.push(new Cockroach(pos.x, pos.y, isFlying));
+            }
+        }
+
+        // Initialize grid targets
+        function initGridTargets() {
+            activeCockroaches = [];
+            for (let i = 0; i < TARGET_COUNT; i++) {
+                spawnTargetInGrid();
+            }
+        }
+
+        /**
+         * Draw Kitchen Tile Floor Grid Background
+         */
+        function drawTileFloor() {
+            // Dark elegant tile pattern
+            ctx.fillStyle = '#0d111e';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            const cellW = canvasWidth / GRID_COLS;
+            const cellH = canvasHeight / GRID_ROWS;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(244, 114, 182, 0.08)'; // Neon pink grid lines
+
+            for (let c = 0; c <= GRID_COLS; c++) {
+                ctx.beginPath();
+                ctx.moveTo(c * cellW, 0);
+                ctx.lineTo(c * cellW, canvasHeight);
+                ctx.stroke();
+            }
+
+            for (let r = 0; r <= GRID_ROWS; r++) {
+                ctx.beginPath();
+                ctx.moveTo(0, r * cellH);
+                ctx.lineTo(canvasWidth, r * cellH);
+                ctx.stroke();
+            }
+
+            // Subtle highlight crosshairs on tile corners
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+            for (let c = 1; c < GRID_COLS; c++) {
+                for (let r = 1; r < GRID_ROWS; r++) {
+                    ctx.beginPath();
+                    ctx.arc(c * cellW, r * cellH, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        /**
+         * Render Vector Black Cat Paw Cursor
+         */
+        function drawCatPaw(x, y) {
+            ctx.save();
+
+            // Recoil animation calculation
+            const recoil = mouse.recoilTimer > 0 ? (mouse.recoilTimer / mouse.recoilMax) * 14 : 0;
+            if (mouse.recoilTimer > 0) mouse.recoilTimer--;
+
+            const pawX = x;
+            const pawY = y + recoil + 25; // Offset so paw palm swatting center hits cursor
+
+            ctx.translate(pawX, pawY);
+
+            // Paw Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, 25, 38, 22, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fill();
+
+            // Fluffy Black Fur Arm
+            ctx.beginPath();
+            ctx.moveTo(-24, 20);
+            ctx.lineTo(-28, 140);
+            ctx.lineTo(28, 140);
+            ctx.lineTo(24, 20);
+            ctx.closePath();
+            ctx.fillStyle = '#111827'; // Dark charcoal black
+            ctx.fill();
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Main Paw Pad (Palm)
+            ctx.beginPath();
+            ctx.ellipse(0, 10, 26, 20, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#111827';
+            ctx.fill();
+            ctx.stroke();
+
+            // Sharp Claws (When Swatting/Clicking)
+            if (mouse.recoilTimer > 0) {
+                ctx.strokeStyle = '#f87171';
+                ctx.lineWidth = 2.5;
+                const clawOffsets = [-22, -8, 8, 22];
+                clawOffsets.forEach(ox => {
+                    ctx.beginPath();
+                    ctx.moveTo(ox, -18);
+                    ctx.quadraticCurveTo(ox * 1.2, -32, ox * 0.9, -38);
+                    ctx.stroke();
+                });
+            }
+
+            // Toe Beans (Pink Soft Pads)
+            // Central Palm Bean
+            ctx.beginPath();
+            ctx.ellipse(0, 12, 14, 10, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#f472b6'; // Vibrant Pink Toe Beans
+            ctx.fill();
+
+            // 4 Digital Toe Beans
+            const beans = [
+                { x: -18, y: -8, rx: 5.5, ry: 7 },
+                { x: -7,  y: -16, rx: 6,   ry: 7.5 },
+                { x: 7,   y: -16, rx: 6,   ry: 7.5 },
+                { x: 18,  y: -8, rx: 5.5, ry: 7 }
+            ];
+
+            beans.forEach(b => {
+                ctx.beginPath();
+                ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#f472b6';
+                ctx.fill();
+            });
+
+            // Swatting Laser / Shockwave Flash Effect
+            if (mouse.recoilTimer > 5) {
+                ctx.beginPath();
+                ctx.arc(0, -10, 45, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(244, 114, 182, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * Handle Click / Swat Input Logic
+         */
+        function handleSwat(clickX, clickY) {
+            if (gameState !== 'PLAYING') return;
+
+            synth.init();
+            mouse.recoilTimer = mouse.recoilMax;
+            totalClicks++;
+
+            let hitIndex = -1;
+
+            // Check collision with cockroaches
+            for (let i = activeCockroaches.length - 1; i >= 0; i--) {
+                const target = activeCockroaches[i];
+                const dist = Math.hypot(clickX - target.x, clickY - target.y);
+                
+                if (dist <= target.radius + 12) { // Precise hit box
+                    hitIndex = i;
+                    break;
+                }
+            }
+
+            if (hitIndex !== -1) {
+                // --- HIT SUCCESS ---
+                const hitTarget = activeCockroaches[hitIndex];
+                hits++;
+                combo++;
+                maxCombo = Math.max(maxCombo, combo);
+
+                // Calculate reaction time
+                const reactionTime = performance.now() - hitTarget.spawnTime;
+                spawnTimestamps.push(reactionTime);
+
+                // Score multiplier based on combo and flying target
+                const basePoints = hitTarget.isFlying ? 250 : 100;
+                const comboBonus = Math.min(combo * 20, 500);
+                const gainedScore = basePoints + comboBonus;
+                score += gainedScore;
+
+                // Audio & FX
+                if (hitTarget.isFlying) {
+                    synth.playBonusZap();
+                } else {
+                    synth.playSplat(combo);
+                }
+
+                spawnSplat(hitTarget.x, hitTarget.y, hitTarget.isFlying);
+                addFloatingText(hitTarget.x, hitTarget.y - 10, `+${gainedScore}`, hitTarget.isFlying ? '#f59e0b' : '#f43f5e');
+
+                // Remove hit cockroach & instantly spawn a new one in Gridshot style!
+                activeCockroaches.splice(hitIndex, 1);
+                spawnTargetInGrid();
+
+            } else {
+                // --- MISS PENALTY ---
+                misses++;
+                combo = 0; // Combo reset
+                synth.playSwoosh();
+                addFloatingText(clickX, clickY, 'MISS!', '#94a3b8');
+            }
+
+            updateHUD();
+        }
+
+        // Bind Mouse & Touch events to Canvas
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            handleSwat(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouse.x = touch.clientX - rect.left;
+            mouse.y = touch.clientY - rect.top;
+            handleSwat(mouse.x, mouse.y);
+        }, { passive: false });
+
+        /**
+         * Update UI HUD Elements
+         */
+        function updateHUD() {
+            document.getElementById('scoreText').innerText = score;
+            
+            // Accuracy
+            const accuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 100;
+            document.getElementById('accuracyText').innerText = `${accuracy}%`;
+
+            // Combo Badge
+            const comboBadge = document.getElementById('comboBadge');
+            const comboText = document.getElementById('comboText');
+            if (combo > 1) {
+                comboText.innerText = `x${combo}`;
+                comboBadge.classList.remove('opacity-0', 'scale-90');
+                comboBadge.classList.add('opacity-100', 'scale-100');
+            } else {
+                comboBadge.classList.remove('opacity-100', 'scale-100');
+                comboBadge.classList.add('opacity-0', 'scale-90');
+            }
+
+            // KPS (Kills Per Second)
+            const elapsedSec = Math.max(0.1, (performance.now() - startTime) / 1000);
+            const kps = (hits / elapsedSec).toFixed(1);
+            document.getElementById('tpsText').innerText = `${kps} KPS`;
+
+            // Timer
+            if (gameMode === '30S') {
+                document.getElementById('timerText').innerText = `${Math.max(0, gameTimer).toFixed(1)}s`;
+            } else {
+                document.getElementById('timerText').innerText = '∞';
+            }
+        }
+
+        /**
+         * Main Game Animation Loop
+         */
+        function gameLoop() {
+            if (gameState !== 'PLAYING') return;
+
+            // 1. Update Timer
+            const now = performance.now();
+            if (gameMode === '30S') {
+                gameTimer = 30.0 - (now - startTime) / 1000;
+                if (gameTimer <= 0) {
+                    gameTimer = 0;
+                    updateHUD();
+                    endGame();
+                    return;
+                }
+            }
+
+            updateHUD();
+
+            // 2. Clear Screen & Render Floor
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            drawTileFloor();
+
+            // 3. Update & Draw Cockroaches
+            activeCockroaches.forEach(target => {
+                target.update();
+                target.draw(ctx);
+            });
+
+            // 4. Update & Draw Particles
+            for (let i = splatParticles.length - 1; i >= 0; i--) {
+                const p = splatParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+
+                if (p.alpha <= 0) {
+                    splatParticles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 5. Update & Draw Floating Score Texts
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y += ft.vy;
+                ft.alpha -= 0.025;
+
+                if (ft.alpha <= 0) {
+                    floatingTexts.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.fillStyle = ft.color;
+                ctx.font = '900 16px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            // 6. Draw Cat Paw Cursor Overlay
+            drawCatPaw(mouse.x, mouse.y);
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Start Game
+         */
+        function startGame(mode) {
+            synth.init();
+            gameMode = mode;
+            gameState = 'PLAYING';
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            hits = 0;
+            misses = 0;
+            totalClicks = 0;
+            gameTimer = 30.0;
+            spawnTimestamps = [];
+            splatParticles = [];
+            floatingTexts = [];
+
+            startTime = performance.now();
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            if (gameMode === '30S') {
+                document.getElementById('timerLabel').innerText = 'TIME REMAINING';
+            } else {
+                document.getElementById('timerLabel').innerText = 'ENDLESS PRACTICE';
+            }
+
+            initGridTargets();
+            cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        /**
+         * End Game & Show Detailed Rank Evaluation
+         */
+        function endGame() {
+            gameState = 'GAMEOVER';
+            cancelAnimationFrame(animationFrameId);
+            synth.playEndFanfare();
+
+            // Save High Scores
+            if (score > highScores.score) {
+                highScores.score = score;
+                localStorage.setItem('cat_paw_best_score', highScores.score.toString());
+            }
+            if (maxCombo > highScores.combo) {
+                highScores.combo = maxCombo;
+                localStorage.setItem('cat_paw_best_combo', highScores.combo.toString());
+            }
+
+            // Calculate Final Statistics
+            const accuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 0;
+            const avgReaction = spawnTimestamps.length > 0 
+                ? Math.round(spawnTimestamps.reduce((a, b) => a + b, 0) / spawnTimestamps.length) 
+                : 0;
+            const elapsedSec = (performance.now() - startTime) / 1000;
+            const kps = (hits / elapsedSec).toFixed(1);
+
+            // Determine Rank
+            let rank = 'C';
+            let rankText = '喵喵實習生 (Kitten)';
+            let rankClass = 'rank-c';
+
+            if (score >= 4500 && accuracy >= 85) {
+                rank = 'S-RANK';
+                rankText = '喵神降臨！蟑螂終結者 (Cat God)';
+                rankClass = 'rank-s';
+            } else if (score >= 3000 && accuracy >= 75) {
+                rank = 'A-RANK';
+                rankText = '頂級獵手！捕蟑神貓 (Apex Predator)';
+                rankClass = 'rank-a';
+            } else if (score >= 1800) {
+                rank = 'B-RANK';
+                rankText = '街頭霸王！野貓爪法 (Alley Cat)';
+                rankClass = 'rank-b';
+            }
+
+            // Populate Results Screen
+            const rankBadge = document.getElementById('rankBadge');
+            rankBadge.innerText = rank;
+            rankBadge.className = `text-6xl md:text-7xl font-black tracking-tighter mb-1 ${rankClass}`;
+            document.getElementById('rankSubtitle').innerText = rankText;
+
+            document.getElementById('resScore').innerText = score;
+            document.getElementById('resAccuracy').innerText = `${accuracy}%`;
+            document.getElementById('resHits').innerText = hits;
+            document.getElementById('resMisses').innerText = misses;
+            document.getElementById('resReaction').innerText = `${avgReaction} ms`;
+            document.getElementById('resMaxCombo').innerText = `x${maxCombo}`;
+            document.getElementById('resKPS').innerText = `${kps} KPS`;
+
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        // DOM Button Bindings
+        document.getElementById('btnMode30s').addEventListener('click', () => startGame('30S'));
+        document.getElementById('btnModeEndless').addEventListener('click', () => startGame('ENDLESS'));
+        document.getElementById('restartBtn').addEventListener('click', () => startGame(gameMode));
+        
+        document.getElementById('mainMenuBtn').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('bestScoreText').innerText = highScores.score;
+            document.getElementById('bestComboText').innerText = highScores.combo;
+        });
+
+        // Audio Mute Toggle
+        const soundBtn = document.getElementById('soundToggleBtn');
+        const soundIcon = document.getElementById('soundIcon');
+        soundBtn.addEventListener('click', () => {
+            synth.muted = !synth.muted;
+            if (synth.muted) {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-high text-pink-400';
+            }
+        });
+
+        // Load High Scores on Initial Load
+        document.getElementById('bestScoreText').innerText = highScores.score;
+        document.getElementById('bestComboText').innerText = highScores.combo;
+
+        // Start Menu Idle Background Render
+        function renderMenuBackground() {
+            if (gameState === 'START' || gameState === 'GAMEOVER') {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawTileFloor();
+            }
+            requestAnimationFrame(renderMenuBackground);
+        }
+        renderMenuBackground();
+    </script>
+</body>
+</html>

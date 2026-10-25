@@ -35,7 +35,6 @@
             cursor: none;
         }
 
-        /* 網格背景 */
         .grid-bg {
             position: absolute;
             top: 0;
@@ -49,7 +48,6 @@
             pointer-events: none;
         }
 
-        /* 頂部 HUD */
         #hud {
             position: absolute;
             top: 15px;
@@ -110,7 +108,6 @@
             transform: scale(0.95);
         }
 
-        /* 選單與結算 */
         .overlay {
             position: absolute;
             top: 0;
@@ -147,7 +144,6 @@
             font-size: 1rem;
         }
 
-        /* 蟑螂體型選擇區塊 */
         .size-selector-box {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -253,7 +249,6 @@
             transform: scale(0.95);
         }
 
-        /* 虛擬搖桿 */
         #joystick-wrapper {
             position: absolute;
             bottom: 40px;
@@ -294,7 +289,6 @@
     <div id="game-container">
         <div class="grid-bg"></div>
 
-        <!-- 頂部資訊欄 -->
         <div id="hud" class="hidden">
             <button class="btn-home" id="btn-hud-home">🏠 首頁</button>
             <div class="hud-group" id="hud-stats">
@@ -313,19 +307,16 @@
             </div>
         </div>
 
-        <!-- 虛擬搖桿 -->
         <div id="joystick-wrapper" class="hidden">
             <div id="joystick-stick"></div>
         </div>
 
-        <!-- 主選單 -->
         <div id="menu-overlay" class="overlay">
             <h1>黑貓拍拍：爆汁 ASMR</h1>
             <p class="subtitle">聽覺與視覺的雙重紓壓打擊樂趣！</p>
 
-            <!-- 蟑螂大小選擇控制列 -->
             <div class="size-selector-box">
-                <span class="size-label">🪳 蟑螂體型：</span>
+                <span class="size-label">🪳 玩家模式蟑螂體型：</span>
                 <div class="size-options">
                     <button class="btn-size" data-size="S">迷你 (S)</button>
                     <button class="btn-size active" data-size="M">標準 (M)</button>
@@ -340,10 +331,10 @@
                     <div class="mode-desc">人用的極致練準度模式！拍爆蟑螂享受 ASMR 爆汁爽感。</div>
                 </div>
 
-                <div class="mode-card" id="mode-for-cat" style="border-color: #ff4081;">
+                <div class="mode-card" id="mode-for-cat" style="border-color: #ff4081; background: rgba(255, 64, 129, 0.08);">
                     <div class="mode-icon">🐈‍⬛</div>
-                    <div class="mode-title">主子真貓專用</div>
-                    <div class="mode-desc">給家裡主子玩的玩具！無時間限制、無限拍擊、專屬音效。</div>
+                    <div class="mode-title">主子真貓專用 (特大)</div>
+                    <div class="mode-desc">專為家貓設計！超巨大蟑螂、全螢幕感應、無時間限制！</div>
                 </div>
 
                 <div class="mode-card" id="mode-roach">
@@ -354,7 +345,6 @@
             </div>
         </div>
 
-        <!-- 結算畫面 -->
         <div id="gameover-overlay" class="overlay hidden">
             <h1 id="go-title">遊戲結束</h1>
             <p id="go-desc" style="font-size: 1.2rem; color: #aeea00; margin-bottom: 15px;"></p>
@@ -375,7 +365,6 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Web Audio API
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -384,7 +373,6 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        // ASMR 爆汁音效
         function playASMRSound(type, combo = 1, sizeScale = 1.0) {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
@@ -440,18 +428,17 @@
                 oscPop.stop(now + 0.08);
 
             } else if (type === 'catToyHit') {
-                // 給真貓玩的超吸引高頻啾啾聲
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(1200 + Math.random() * 800, now);
-                osc.frequency.exponentialRampToValueAtTime(2400, now + 0.1);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(2400, now + 0.12);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.1);
+                osc.stop(now + 0.12);
 
             } else if (type === 'eat') {
                 const osc = audioCtx.createOscillator();
@@ -492,7 +479,8 @@
         const sizeConfig = {
             'S':  { scale: 0.6, speedMult: 1.5, hitRadius: 40, scoreMult: 1.5, stainMult: 0.6, particles: 15 },
             'M':  { scale: 1.0, speedMult: 1.0, hitRadius: 60, scoreMult: 1.0, stainMult: 1.0, particles: 25 },
-            'XL': { scale: 1.8, speedMult: 0.7, hitRadius: 90, scoreMult: 0.8, stainMult: 2.0, particles: 45 }
+            'XL': { scale: 1.8, speedMult: 0.7, hitRadius: 90, scoreMult: 0.8, stainMult: 2.0, particles: 45 },
+            'FOR_CAT': { scale: 3.5, speedMult: 0.9, hitRadius: 140, scoreMult: 1.0, stainMult: 3.0, particles: 50 } // 真貓特大版
         };
 
         let gameMode = null; // 'CAT', 'FOR_CAT', 'ROACH'
@@ -509,14 +497,13 @@
 
         function getSafeBounds() {
             return {
-                minX: 60,
-                maxX: canvas.width - 60,
-                minY: canvas.height * 0.18,
-                maxY: canvas.height * 0.82
+                minX: 80,
+                maxX: canvas.width - 80,
+                minY: canvas.height * 0.15,
+                maxY: canvas.height * 0.85
             };
         }
 
-        // 汁液印記
         class JuiceStain {
             constructor(x, y, scale = 1.0) {
                 this.x = x;
@@ -551,7 +538,6 @@
             }
         }
 
-        // 噴飛粒子
         class JuiceParticle {
             constructor(x, y, scale = 1.0) {
                 this.x = x;
@@ -585,7 +571,6 @@
             }
         }
 
-        // 飄字
         class PopText {
             constructor(x, y, text) {
                 this.x = x;
@@ -610,7 +595,6 @@
             }
         }
 
-        // 蟑螂類別
         class Roach {
             constructor(type = 'NORMAL') {
                 const bounds = getSafeBounds();
@@ -618,7 +602,7 @@
                 this.y = getRandom(bounds.minY, bounds.maxY);
                 this.type = type;
 
-                const cfg = sizeConfig[selectedRoachSize];
+                const cfg = gameMode === 'FOR_CAT' ? sizeConfig['FOR_CAT'] : sizeConfig[selectedRoachSize];
                 this.scale = cfg.scale;
                 this.speedMult = (type === 'FAST' ? 1.8 : 1.0) * cfg.speedMult;
 
@@ -635,9 +619,12 @@
                 if (this.x < bounds.minX || this.x > bounds.maxX) this.vx *= -1;
                 if (this.y < bounds.minY || this.y > bounds.maxY) this.vy *= -1;
 
-                if (Math.random() < 0.04) {
-                    this.vx = (Math.random() - 0.5) * 7 * this.speedMult;
-                    this.vy = (Math.random() - 0.5) * 7 * this.speedMult;
+                // 真貓模式專屬的突發飆速與停頓（極度吸引貓咪眼球）
+                const changeRate = gameMode === 'FOR_CAT' ? 0.07 : 0.04;
+                if (Math.random() < changeRate) {
+                    const burst = (gameMode === 'FOR_CAT' && Math.random() < 0.4) ? 2.5 : 1.0;
+                    this.vx = (Math.random() - 0.5) * 7 * this.speedMult * burst;
+                    this.vy = (Math.random() - 0.5) * 7 * this.speedMult * burst;
                 }
 
                 this.angle = Math.atan2(this.vy, this.vx);
@@ -649,7 +636,6 @@
                 ctx.rotate(this.angle);
                 ctx.scale(this.scale, this.scale);
 
-                // 觸角
                 ctx.strokeStyle = this.type === 'FAST' ? '#ffd600' : '#8B4513';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -657,13 +643,11 @@
                 ctx.moveTo(10, 3); ctx.lineTo(24, 12);
                 ctx.stroke();
 
-                // 身體
                 ctx.fillStyle = this.type === 'FAST' ? '#b71c1c' : '#4a2511';
                 ctx.beginPath();
                 ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 頭部
                 ctx.fillStyle = '#1b0a03';
                 ctx.beginPath();
                 ctx.arc(11, 0, 6, 0, Math.PI * 2);
@@ -673,7 +657,6 @@
             }
         }
 
-        // 食物屑
         class Food {
             constructor() {
                 const bounds = getSafeBounds();
@@ -688,7 +671,6 @@
             }
         }
 
-        // AI 貓爪打擊
         class AIStrike {
             constructor(tx, ty) {
                 this.x = tx;
@@ -727,7 +709,6 @@
             }
         }
 
-        // 繪製黑貓爪
         function drawCatPaw(x, y, scale = 1.0) {
             ctx.save();
             ctx.translate(x, y);
@@ -798,14 +779,13 @@
             }
         });
 
-        // 拍打爆汁處理
         function checkCatHit(hx, hy) {
             let hit = false;
-            const cfg = sizeConfig[selectedRoachSize];
+            const cfg = gameMode === 'FOR_CAT' ? sizeConfig['FOR_CAT'] : sizeConfig[selectedRoachSize];
 
             for (let i = roaches.length - 1; i >= 0; i--) {
                 const r = roaches[i];
-                if (Math.hypot(r.x - hx, r.y - hy) < (cfg.hitRadius * (gameMode === 'FOR_CAT' ? 1.3 : 1.0))) {
+                if (Math.hypot(r.x - hx, r.y - hy) < cfg.hitRadius) {
                     hit = true;
 
                     combo++;
@@ -843,7 +823,6 @@
             document.getElementById('val-combo').innerText = combo;
         }
 
-        // 搖桿控制
         const joyWrapper = document.getElementById('joystick-wrapper');
         const joyStick = document.getElementById('joystick-stick');
         let joystickActive = false;
@@ -876,7 +855,6 @@
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // 開始遊戲
         function startGame(mode) {
             initAudio();
             gameMode = mode;
@@ -901,10 +879,10 @@
                     roaches.push(new Roach(i % 2 === 0 ? 'FAST' : 'NORMAL'));
                 }
             } else if (gameMode === 'FOR_CAT') {
-                // 真貓專用模式：無時間限制，隱藏時間欄
+                // 特大真貓模式：畫面保持 3 隻超大蟑螂
                 document.getElementById('card-time').classList.add('hidden');
                 document.getElementById('joystick-wrapper').classList.add('hidden');
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 3; i++) {
                     roaches.push(new Roach('NORMAL'));
                 }
             } else {
@@ -966,7 +944,6 @@
             document.getElementById('menu-overlay').classList.remove('hidden');
         }
 
-        // 循環渲染
         function loop() {
             ctx.save();
 
@@ -986,7 +963,6 @@
                     roaches.forEach(r => { r.update(); r.draw(); });
                     drawCatPaw(mouseX, mouseY, 1.0);
                 } else if (gameMode === 'FOR_CAT') {
-                    // 真貓專用模式（不顯示玩家爪子，只顯示蟑螂）
                     roaches.forEach(r => { r.update(); r.draw(); });
                 } else if (gameMode === 'ROACH') {
                     const cfg = sizeConfig[selectedRoachSize];

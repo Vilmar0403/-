@@ -133,8 +133,8 @@
         }
 
         h1 {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
+            font-size: 2.6rem;
+            margin-bottom: 8px;
             background: linear-gradient(45deg, #aeea00, #ff9100);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -143,8 +143,50 @@
 
         p.subtitle {
             color: #bbb;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        /* 蟑螂體型選擇區塊 */
+        .size-selector-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .size-label {
+            font-size: 0.95rem;
+            color: #ffca28;
+            font-weight: bold;
+        }
+
+        .size-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-size {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ccc;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn-size.active {
+            background: #aeea00;
+            color: #121212;
+            font-weight: bold;
+            border-color: #aeea00;
+            box-shadow: 0 0 12px rgba(174, 234, 0, 0.5);
         }
 
         .mode-cards {
@@ -281,6 +323,16 @@
             <h1>黑貓拍拍：爆汁 ASMR</h1>
             <p class="subtitle">聽覺與視覺的雙重紓壓打擊樂趣！</p>
 
+            <!-- 蟑螂大小選擇控制列 -->
+            <div class="size-selector-box">
+                <span class="size-label">🪳 蟑螂體型：</span>
+                <div class="size-options">
+                    <button class="btn-size" data-size="S">迷你 (S)</button>
+                    <button class="btn-size active" data-size="M">標準 (M)</button>
+                    <button class="btn-size" data-size="XL">巨無霸 (XL)</button>
+                </div>
+            </div>
+
             <div class="mode-cards">
                 <div class="mode-card" id="mode-cat">
                     <div class="mode-icon">🐾</div>
@@ -317,7 +369,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Web Audio API - 高級 ASMR 音效生成器
+        // Web Audio API
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -326,27 +378,28 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        // ASMR 擬真爆汁與啪啪音效
-        function playASMRSound(type, combo = 1) {
+        // ASMR 爆汁音效
+        function playASMRSound(type, combo = 1, sizeScale = 1.0) {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
 
             if (type === 'splatter') {
-                // 1. 低頻肉墊拍擊聲 (Slap Thud)
+                // 肉墊重擊聲 (體型越大低音越重)
                 const oscThud = audioCtx.createOscillator();
                 const gainThud = audioCtx.createGain();
                 oscThud.type = 'triangle';
-                oscThud.frequency.setValueAtTime(160, now);
-                oscThud.frequency.exponentialRampToValueAtTime(30, now + 0.12);
-                gainThud.gain.setValueAtTime(0.6, now);
-                gainThud.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                const baseThud = 160 / sizeScale;
+                oscThud.frequency.setValueAtTime(baseThud, now);
+                oscThud.frequency.exponentialRampToValueAtTime(30, now + 0.12 * sizeScale);
+                gainThud.gain.setValueAtTime(0.6 * sizeScale, now);
+                gainThud.gain.linearRampToValueAtTime(0.01, now + 0.12 * sizeScale);
                 oscThud.connect(gainThud);
                 gainThud.connect(audioCtx.destination);
                 oscThud.start(now);
-                oscThud.stop(now + 0.12);
+                oscThud.stop(now + 0.12 * sizeScale);
 
-                // 2. 爆汁碎裂聲 (Squish Crackle Noise)
-                const bufferSize = audioCtx.sampleRate * 0.15;
+                // 碎裂噪音
+                const bufferSize = audioCtx.sampleRate * 0.15 * sizeScale;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -357,19 +410,19 @@
 
                 const filter = audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(1200 + Math.random() * 800, now);
+                filter.frequency.setValueAtTime((1200 + Math.random() * 800) / sizeScale, now);
                 filter.Q.setValueAtTime(3, now);
 
                 const noiseGain = audioCtx.createGain();
                 noiseGain.gain.setValueAtTime(0.5, now);
-                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15 * sizeScale);
 
                 noise.connect(filter);
                 filter.connect(noiseGain);
                 noiseGain.connect(audioCtx.destination);
                 noise.start(now);
 
-                // 3. Combo 療癒高音階 (Pico Pop)
+                // Combo 高音 Pop
                 const oscPop = audioCtx.createOscillator();
                 const gainPop = audioCtx.createGain();
                 oscPop.type = 'sine';
@@ -418,6 +471,14 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // 選擇的蟑螂大小設定 ('S', 'M', 'XL')
+        let selectedRoachSize = 'M';
+        const sizeConfig = {
+            'S':  { scale: 0.6, speedMult: 1.5, hitRadius: 40, scoreMult: 1.5, stainMult: 0.6, particles: 15 },
+            'M':  { scale: 1.0, speedMult: 1.0, hitRadius: 60, scoreMult: 1.0, stainMult: 1.0, particles: 25 },
+            'XL': { scale: 1.8, speedMult: 0.7, hitRadius: 90, scoreMult: 0.8, stainMult: 2.0, particles: 45 }
+        };
+
         // 遊戲狀態
         let gameMode = null;
         let isPlaying = false;
@@ -440,20 +501,20 @@
             };
         }
 
-        // 地面留下的綠液印記 (Splatter Mark)
+        // 汁液印記
         class JuiceStain {
-            constructor(x, y) {
+            constructor(x, y, scale = 1.0) {
                 this.x = x;
                 this.y = y;
-                this.size = getRandom(20, 45);
+                this.size = getRandom(20, 45) * scale;
                 this.alpha = 0.8;
                 this.color = Math.random() < 0.7 ? '#aeea00' : '#76ff03';
                 this.splats = [];
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < Math.floor(6 * scale); i++) {
                     this.splats.push({
                         dx: (Math.random() - 0.5) * this.size * 1.5,
                         dy: (Math.random() - 0.5) * this.size * 1.5,
-                        r: getRandom(3, 10)
+                        r: getRandom(3, 10) * scale
                     });
                 }
             }
@@ -462,33 +523,29 @@
                 ctx.save();
                 ctx.globalAlpha = this.alpha;
                 ctx.fillStyle = this.color;
-
-                // 主汁斑
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 四濺小小斑
                 this.splats.forEach(s => {
                     ctx.beginPath();
                     ctx.arc(this.x + s.dx, this.y + s.dy, s.r, 0, Math.PI * 2);
                     ctx.fill();
                 });
-
                 ctx.restore();
             }
         }
 
-        // 動態爆汁噴飛粒子 (Particle Splatter)
+        // 噴飛粒子
         class JuiceParticle {
-            constructor(x, y) {
+            constructor(x, y, scale = 1.0) {
                 this.x = x;
                 this.y = y;
                 const angle = Math.random() * Math.PI * 2;
-                const speed = getRandom(4, 16);
+                const speed = getRandom(4, 16) * Math.sqrt(scale);
                 this.vx = Math.cos(angle) * speed;
                 this.vy = Math.sin(angle) * speed;
-                this.radius = getRandom(3, 8);
+                this.radius = getRandom(3, 8) * scale;
                 this.color = Math.random() < 0.6 ? '#aeea00' : (Math.random() < 0.5 ? '#76ff03' : '#ffd600');
                 this.alpha = 1.0;
                 this.decay = getRandom(0.02, 0.04);
@@ -513,7 +570,7 @@
             }
         }
 
-        // 文字彈出 (Popup Text)
+        // 飄字
         class PopText {
             constructor(x, y, text) {
                 this.x = x;
@@ -544,9 +601,12 @@
                 const bounds = getSafeBounds();
                 this.x = getRandom(bounds.minX, bounds.maxX);
                 this.y = getRandom(bounds.minY, bounds.maxY);
-                this.type = type; // 'NORMAL' or 'FAST'
-                this.speedMult = type === 'FAST' ? 1.8 : 1.0;
-                this.size = 26;
+                this.type = type;
+
+                const cfg = sizeConfig[selectedRoachSize];
+                this.scale = cfg.scale;
+                this.speedMult = (type === 'FAST' ? 1.8 : 1.0) * cfg.speedMult;
+
                 this.vx = (Math.random() - 0.5) * 6 * this.speedMult;
                 this.vy = (Math.random() - 0.5) * 6 * this.speedMult;
                 this.angle = Math.atan2(this.vy, this.vx);
@@ -572,6 +632,7 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
+                ctx.scale(this.scale, this.scale);
 
                 // 觸角
                 ctx.strokeStyle = this.type === 'FAST' ? '#ffd600' : '#8B4513';
@@ -612,7 +673,7 @@
             }
         }
 
-        // AI 貓爪重擊 (蟑螂逃亡模式)
+        // AI 貓爪打擊
         class AIStrike {
             constructor(tx, ty) {
                 this.x = tx;
@@ -627,8 +688,9 @@
                     this.progress += 0.035;
                     if (this.progress >= 1) {
                         this.isStriking = true;
-                        playASMRSound('splatter');
-                        shakeTime = 8;
+                        const cfg = sizeConfig[selectedRoachSize];
+                        playASMRSound('splatter', 1, cfg.scale);
+                        shakeTime = Math.floor(8 * cfg.scale);
                     }
                 } else {
                     this.progress -= 0.12;
@@ -656,19 +718,16 @@
             ctx.translate(x, y);
             ctx.scale(scale, scale);
 
-            // 外陰影
             ctx.fillStyle = '#141419';
             ctx.beginPath();
             ctx.arc(0, 0, 36, 0, Math.PI * 2);
             ctx.fill();
 
-            // 主粉紅肉墊
             ctx.fillStyle = '#ff4081';
             ctx.beginPath();
             ctx.arc(0, 6, 19, 0, Math.PI * 2);
             ctx.fill();
 
-            // 腳趾
             const toes = [
                 { x: -19, y: -21 },
                 { x: -7, y: -29 },
@@ -685,7 +744,6 @@
             ctx.restore();
         }
 
-        // 容器與陣列
         let roaches = [];
         let foods = [];
         let aiStrikes = [];
@@ -696,7 +754,6 @@
 
         function getRandom(min, max) { return Math.random() * (max - min) + min; }
 
-        // --- 觸控與點擊控制 ---
         function handleInputMove(px, py) {
             mouseX = px;
             mouseY = py;
@@ -725,32 +782,30 @@
         // 拍打爆汁處理
         function checkCatHit(hx, hy) {
             let hit = false;
+            const cfg = sizeConfig[selectedRoachSize];
+
             for (let i = roaches.length - 1; i >= 0; i--) {
                 const r = roaches[i];
-                if (Math.hypot(r.x - hx, r.y - hy) < 60) {
+                if (Math.hypot(r.x - hx, r.y - hy) < cfg.hitRadius) {
                     hit = true;
 
-                    // 1. Combo 計算
                     combo++;
                     clearTimeout(comboTimer);
                     comboTimer = setTimeout(() => { combo = 0; updateHUD(); }, 1200);
 
-                    // 2. 音效與震動
-                    playASMRSound('splatter', combo);
-                    shakeTime = 6;
+                    playASMRSound('splatter', combo, cfg.scale);
+                    shakeTime = Math.floor(6 * cfg.scale);
 
-                    // 3. 噴汁特效 (Stain & Particles)
-                    stains.push(new JuiceStain(r.x, r.y));
-                    for (let p = 0; p < 25; p++) {
-                        particles.push(new JuiceParticle(r.x, r.y));
+                    stains.push(new JuiceStain(r.x, r.y, cfg.stainMult));
+                    for (let p = 0; p < cfg.particles; p++) {
+                        particles.push(new JuiceParticle(r.x, r.y, cfg.scale));
                     }
 
-                    // 4. 分數與飄字
-                    const pts = r.type === 'FAST' ? 200 : 100;
-                    score += pts * (1 + Math.floor(combo / 5));
-                    popTexts.push(new PopText(r.x, r.y, `+${pts} ${combo > 1 ? combo + 'x!' : ''}`));
+                    const basePts = r.type === 'FAST' ? 200 : 100;
+                    const gainedPts = Math.round(basePts * cfg.scoreMult * (1 + Math.floor(combo / 5)));
+                    score += gainedPts;
+                    popTexts.push(new PopText(r.x, r.y, `+${gainedPts} ${combo > 1 ? combo + 'x!' : ''}`));
 
-                    // 重新生成
                     roaches.splice(i, 1);
                     roaches.push(new Roach(Math.random() < 0.3 ? 'FAST' : 'NORMAL'));
                     updateHUD();
@@ -764,7 +819,7 @@
             document.getElementById('val-combo').innerText = combo;
         }
 
-        // 虛擬搖桿
+        // 搖桿控制
         const joyWrapper = document.getElementById('joystick-wrapper');
         const joyStick = document.getElementById('joystick-stick');
         let joystickActive = false;
@@ -797,7 +852,7 @@
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // 流程控制
+        // 開始遊戲
         function startGame(mode) {
             initAudio();
             gameMode = mode;
@@ -854,7 +909,7 @@
 
             if (gameMode === 'CAT') {
                 title.innerText = "紓壓爆汁完成！✨";
-                desc.innerText = `你一共拍爆了無數蟑螂，產生了滿屏噴汁打擊！`;
+                desc.innerText = `體型：[${selectedRoachSize}]。你成功擊爆了大量的蟑螂，累積了滿屏噴汁！`;
             } else {
                 if (survived) {
                     title.innerText = "逃亡成功！🎉";
@@ -875,11 +930,10 @@
             document.getElementById('menu-overlay').classList.remove('hidden');
         }
 
-        // 主畫面繪製循環
+        // 循環渲染
         function loop() {
             ctx.save();
 
-            // 畫面震撼 (Screen Shake)
             if (shakeTime > 0) {
                 const sx = (Math.random() - 0.5) * shakeTime * 2;
                 const sy = (Math.random() - 0.5) * shakeTime * 2;
@@ -889,7 +943,6 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 繪製地上的汁液印記
             stains.forEach(s => s.draw());
 
             if (isPlaying) {
@@ -897,7 +950,9 @@
                     roaches.forEach(r => { r.update(); r.draw(); });
                     drawCatPaw(mouseX, mouseY, 1.0);
                 } else if (gameMode === 'ROACH') {
-                    let speed = 5.5;
+                    const cfg = sizeConfig[selectedRoachSize];
+                    let speed = 5.5 * cfg.speedMult;
+
                     if (joystickActive) {
                         playerRoach.x += joyVector.x * speed;
                         playerRoach.y += joyVector.y * speed;
@@ -914,7 +969,7 @@
 
                     foods.forEach((f, idx) => {
                         f.draw();
-                        if (Math.hypot(f.x - playerRoach.x, f.y - playerRoach.y) < 22) {
+                        if (Math.hypot(f.x - playerRoach.x, f.y - playerRoach.y) < (22 * cfg.scale)) {
                             score += 50;
                             updateHUD();
                             playASMRSound('eat');
@@ -929,9 +984,8 @@
 
                         if (strike.isStriking) {
                             if (Math.hypot(strike.x - playerRoach.x, strike.y - playerRoach.y) < strike.radius) {
-                                // 爆汁死亡
-                                stains.push(new JuiceStain(playerRoach.x, playerRoach.y));
-                                for (let p = 0; p < 30; p++) particles.push(new JuiceParticle(playerRoach.x, playerRoach.y));
+                                stains.push(new JuiceStain(playerRoach.x, playerRoach.y, cfg.stainMult));
+                                for (let p = 0; p < cfg.particles; p++) particles.push(new JuiceParticle(playerRoach.x, playerRoach.y, cfg.scale));
                                 endGame(false);
                             }
                         }
@@ -942,6 +996,7 @@
                     ctx.save();
                     ctx.translate(playerRoach.x, playerRoach.y);
                     if (joystickActive) ctx.rotate(playerRoach.angle);
+                    ctx.scale(cfg.scale, cfg.scale);
                     ctx.fillStyle = '#ff3d00';
                     ctx.beginPath();
                     ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
@@ -953,7 +1008,6 @@
                     ctx.restore();
                 }
 
-                // 繪製爆汁飛濺粒子
                 for (let i = particles.length - 1; i >= 0; i--) {
                     const p = particles[i];
                     p.update();
@@ -961,7 +1015,6 @@
                     if (p.alpha <= 0) particles.splice(i, 1);
                 }
 
-                // 繪製飄字
                 for (let i = popTexts.length - 1; i >= 0; i--) {
                     const pt = popTexts[i];
                     pt.update();
@@ -973,6 +1026,15 @@
             ctx.restore();
             requestAnimationFrame(loop);
         }
+
+        // 綁定體型選擇按鈕
+        document.querySelectorAll('.btn-size').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.btn-size').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedRoachSize = e.target.getAttribute('data-size');
+            });
+        });
 
         document.getElementById('mode-cat').addEventListener('click', () => startGame('CAT'));
         document.getElementById('mode-roach').addEventListener('click', () => startGame('ROACH'));

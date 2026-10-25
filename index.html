@@ -3,1009 +3,853 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>黑貓 vs 蟑螂大對決 (Black Cat Paw vs Cockroach)</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>黑貓 vs 蟑螂大對決</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+TC:wght@500;700;900&display=swap');
-
         * {
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-
-        body {
-            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
-            background-color: #0b0d14;
-            color: #ffffff;
-            overflow: hidden;
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }
-
-        #gameCanvas {
+            user-select: none;
+            -webkit-user-select: none;
             touch-action: none;
         }
 
-        /* Glassmorphism Panels */
-        .glass-panel {
-            background: rgba(15, 20, 32, 0.85);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(244, 114, 182, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        body {
+            background-color: #121214;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .neon-border {
-            box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #2a2a35 0%, #121218 100%);
+            overflow: hidden;
+            cursor: none;
         }
 
-        .neon-btn-pink {
-            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .neon-btn-pink:hover {
-            box-shadow: 0 0 30px rgba(236, 72, 153, 0.7);
-            transform: translateY(-2px) scale(1.02);
-        }
-
-        .neon-btn-amber {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .neon-btn-amber:hover {
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
-            transform: translateY(-2px) scale(1.02);
+        /* 網格背景 (Gridshot 風格) */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            pointer-events: none;
         }
 
-        .text-glow-pink {
-            text-shadow: 0 0 12px rgba(244, 114, 182, 0.8), 0 0 25px rgba(236, 72, 153, 0.4);
-        }
-        .text-glow-amber {
-            text-shadow: 0 0 12px rgba(251, 191, 36, 0.8), 0 0 25px rgba(245, 158, 11, 0.4);
+        /* 頂部 HUD 欄位 */
+        #hud {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
         }
 
-        .rank-s { color: #f43f5e; text-shadow: 0 0 20px #f43f5e; }
-        .rank-a { color: #fbbf24; text-shadow: 0 0 20px #fbbf24; }
-        .rank-b { color: #38bdf8; text-shadow: 0 0 20px #38bdf8; }
-        .rank-c { color: #94a3b8; text-shadow: 0 0 10px #94a3b8; }
+        .hud-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .hud-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #ffca28;
+        }
+
+        .btn-home {
+            pointer-events: auto;
+            background: #ff5252;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 82, 82, 0.4);
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-home:active {
+            transform: scale(0.95);
+            background: #e04848;
+        }
+
+        /* 主選單 & 結算畫面 */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: #ccc;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .mode-cards {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 700px;
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            width: 280px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .mode-card:hover, .mode-card:active {
+            transform: translateY(-5px);
+            border-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+            box-shadow: 0 10px 25px rgba(255, 152, 0, 0.2);
+        }
+
+        .mode-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .mode-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .mode-desc {
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        /* 按鈕樣式 */
+        .btn-action {
+            background: linear-gradient(45deg, #ff9800, #ff5722);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+
+        /* 虛擬搖桿 (Joystick) */
+        #joystick-wrapper {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            z-index: 50;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #ff9800, #e65100);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: absolute;
+        }
+
+        /* 遊戲主 Canvas */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
     </style>
 </head>
-<body class="w-screen h-screen flex justify-center items-center relative overflow-hidden select-none bg-slate-950">
+<body>
 
-    <!-- Main Game Container View -->
-    <div id="gameContainer" class="relative w-full h-full max-w-5xl max-h-[900px] flex justify-center items-center shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border border-pink-500/30">
-        
-        <!-- Game Canvas -->
-        <canvas id="gameCanvas" class="w-full h-full block cursor-none"></canvas>
+    <div id="game-container">
+        <div class="grid-bg"></div>
 
-        <!-- Active HUD (Heads Up Display) -->
-        <div id="hud" class="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none hidden z-10">
-            <!-- Left Info Panel -->
-            <div class="flex flex-col gap-2">
-                <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 border-l-4 border-pink-500 pointer-events-auto">
-                    <i id="hudModeIcon" class="fa-solid fa-paw text-pink-400 text-lg"></i>
-                    <div>
-                        <div id="hudScoreLabel" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">SCORE</div>
-                        <div id="scoreText" class="text-xl md:text-2xl font-black text-white leading-none tracking-wider">0</div>
-                    </div>
+        <!-- 頂部資訊欄 -->
+        <div id="hud" class="hidden">
+            <button class="btn-home" id="btn-hud-home">🏠 首頁</button>
+            <div class="hud-group">
+                <div class="hud-card">
+                    <span class="hud-label" id="label-score">分數</span>
+                    <span class="hud-value" id="val-score">0</span>
                 </div>
-
-                <div id="comboBadge" class="glass-panel px-3 py-1 rounded-xl flex items-center gap-2 border-l-4 border-yellow-400 transition-all duration-200 transform opacity-0 scale-90">
-                    <i class="fa-solid fa-bolt text-yellow-400 text-xs"></i>
-                    <span id="comboText" class="text-sm font-black text-yellow-400 text-glow-amber">x0</span>
+                <div class="hud-card">
+                    <span class="hud-label" id="label-time">時間</span>
+                    <span class="hud-value" id="val-time">30</span>
                 </div>
-            </div>
-
-            <!-- Center Mode Display & Main Home Return Button -->
-            <div class="flex flex-col items-center gap-2">
-                <button id="hudHomeBtn" class="pointer-events-auto glass-panel px-4 py-2 rounded-2xl border border-pink-500/40 hover:border-pink-400 hover:bg-pink-500/20 text-white font-bold text-xs flex items-center gap-2 transition duration-200 transform hover:scale-105 active:scale-95 shadow-lg">
-                    <i class="fa-solid fa-house text-pink-400"></i> 回首頁
-                </button>
-                <div class="glass-panel px-4 py-1.5 rounded-xl border-t border-pink-500/40">
-                    <div id="timerText" class="text-lg md:text-xl font-black text-pink-300 tracking-widest text-glow-pink">30.0s</div>
-                </div>
-            </div>
-
-            <!-- Right Info Panel -->
-            <div class="flex flex-col gap-2 items-end">
-                <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 border-r-4 border-cyan-400">
-                    <div class="text-right">
-                        <div id="hudRightLabel" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ACCURACY</div>
-                        <div id="hudRightValue" class="text-xl md:text-2xl font-black text-cyan-300 leading-none">100%</div>
-                    </div>
-                    <i id="hudRightIcon" class="fa-solid fa-bullseye text-cyan-400 text-lg"></i>
-                </div>
-
-                <button id="soundToggleBtn" class="pointer-events-auto w-9 h-9 rounded-full glass-panel flex justify-center items-center text-slate-300 hover:text-white transition duration-200">
-                    <i id="soundIcon" class="fa-solid fa-volume-high text-pink-400 text-xs"></i>
-                </button>
             </div>
         </div>
 
-        <!-- SCREEN 1: Main Home Menu Mode Selection -->
-        <div id="startScreen" class="absolute inset-0 z-20 glass-panel flex flex-col justify-center items-center p-6 text-center">
-            <!-- Header Logo -->
-            <div class="mb-6 relative">
-                <div class="inline-block px-4 py-1 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold tracking-widest mb-2 uppercase">
-                    Cat Paw vs Cockroach Simulator
+        <!-- 虛擬搖桿 (僅在蟑螂逃亡模式顯示) -->
+        <div id="joystick-wrapper" class="hidden">
+            <div id="joystick-stick"></div>
+        </div>
+
+        <!-- 主選單 (選擇身份) -->
+        <div id="menu-overlay" class="overlay">
+            <h1>黑貓 vs 蟑螂大對決</h1>
+            <p class="subtitle">請選擇你想要扮演的角色</p>
+
+            <div class="mode-cards">
+                <div class="mode-card" id="mode-cat">
+                    <div class="mode-icon">🐾</div>
+                    <div class="mode-title">當貓爪獵人</div>
+                    <div class="mode-desc">快速點擊拍打場上瘋狂逃竄的蟑螂！練就極致反應力與準心。</div>
                 </div>
-                <h1 class="text-3xl sm:text-5xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-amber-400 text-glow-pink mb-2">
-                    黑貓 vs 蟑螂大對決
-                </h1>
-                <p class="text-slate-300 text-xs sm:text-sm font-medium tracking-wide">
-                    選擇你的立場！化身貓爪捕擊蟑螂，或是成為蟑螂極限求生！
-                </p>
-            </div>
 
-            <!-- Two Main Roles / Modes Selection -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl mb-6">
-                <!-- Role 1: Cat Paw Hunter -->
-                <button id="btnRoleCat" class="p-5 rounded-2xl glass-panel border-2 border-pink-500/50 hover:border-pink-400 text-left transition duration-200 group relative overflow-hidden text-white flex flex-col justify-between hover:bg-pink-500/10">
-                    <div class="absolute -right-3 -bottom-3 text-pink-500/10 text-8xl font-black group-hover:scale-110 transition duration-300">
-                        <i class="fa-solid fa-paw"></i>
-                    </div>
-                    <div>
-                        <div class="inline-block px-2.5 py-0.5 rounded-md bg-pink-500/30 text-pink-300 text-[10px] font-black uppercase mb-2">
-                            角色：黑貓 (Hunter)
-                        </div>
-                        <div class="font-black text-pink-400 text-xl mb-1 flex items-center gap-2">
-                            🐾 貓爪打蟑螂
-                        </div>
-                        <p class="text-slate-300 text-xs leading-relaxed mb-3">
-                            經典 Gridshot 槍法練習！揮舞粉紅肉墊，快速精準拍扁瘋狂狂奔的蟑螂！
-                        </p>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-pink-500/20 text-xs font-bold text-pink-300">
-                        <span>最高得分: <strong id="bestCatScore" class="text-yellow-400">0</strong></span>
-                        <span class="group-hover:translate-x-1 transition">選擇貓爪 <i class="fa-solid fa-arrow-right"></i></span>
-                    </div>
-                </button>
-
-                <!-- Role 2: Cockroach Survival -->
-                <button id="btnRoleRoach" class="p-5 rounded-2xl glass-panel border-2 border-amber-500/50 hover:border-amber-400 text-left transition duration-200 group relative overflow-hidden text-white flex flex-col justify-between hover:bg-amber-500/10">
-                    <div class="absolute -right-3 -bottom-3 text-amber-500/10 text-8xl font-black group-hover:scale-110 transition duration-300">
-                        <i class="fa-solid fa-bug"></i>
-                    </div>
-                    <div>
-                        <div class="inline-block px-2.5 py-0.5 rounded-md bg-amber-500/30 text-amber-300 text-[10px] font-black uppercase mb-2">
-                            角色：蟑螂 (Survivor)
-                        </div>
-                        <div class="font-black text-amber-400 text-xl mb-1 flex items-center gap-2">
-                            🪳 蟑螂逃跑大作戰
-                        </div>
-                        <p class="text-slate-300 text-xs leading-relaxed mb-3">
-                            控制小蟑螂 (滑鼠/觸控/WASD)，躲避貓爪的陰影重擊！撿取食物獲得加速與高分！
-                        </p>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-amber-500/20 text-xs font-bold text-amber-300">
-                        <span>最長生存: <strong id="bestRoachTime" class="text-amber-400">0.0s</strong></span>
-                        <span class="group-hover:translate-x-1 transition">選擇蟑螂 <i class="fa-solid fa-arrow-right"></i></span>
-                    </div>
-                </button>
-            </div>
-
-            <div class="text-slate-400 text-[11px] font-semibold">
-                💡 支援電腦鍵盤 (WASD / 方向鍵) 與 行動裝置 Touch 觸控操作
+                <div class="mode-card" id="mode-roach">
+                    <div class="mode-icon">🪳</div>
+                    <div class="mode-title">當逃亡蟑螂</div>
+                    <div class="mode-desc">操控蟑螂吃餅乾屑拿高分，同時閃避天降貓爪的致命重擊！</div>
+                </div>
             </div>
         </div>
 
-        <!-- SCREEN 2: Game Over Results -->
-        <div id="gameOverScreen" class="absolute inset-0 z-20 glass-panel flex flex-col justify-center items-center p-6 text-center hidden">
-            <div class="mb-3">
-                <div id="rankTitle" class="text-xs font-black tracking-widest uppercase mb-1 text-slate-400">EVALUATION RANK</div>
-                <div id="rankBadge" class="text-5xl md:text-6xl font-black tracking-tighter mb-1 rank-s">S-RANK</div>
-                <div id="rankSubtitle" class="text-sm font-bold text-slate-300">喵神降臨！蟑螂終結者</div>
+        <!-- 遊戲結束結算畫面 -->
+        <div id="gameover-overlay" class="overlay hidden">
+            <h1 id="go-title">遊戲結束</h1>
+            <p id="go-desc" style="font-size: 1.2rem; color: #ffca28; margin-bottom: 15px;"></p>
+            <div class="hud-card" style="margin-bottom: 20px; padding: 15px 30px;">
+                <span class="hud-label">最終得分</span>
+                <span class="hud-value" id="go-score" style="font-size: 2.5rem;">0</span>
             </div>
-
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-2 gap-3 w-full max-w-md mb-5 text-left">
-                <div class="glass-panel p-3 rounded-xl border border-slate-800">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">最終成績 (Final Score)</div>
-                    <div id="resScore" class="text-xl font-black text-yellow-400">0</div>
-                </div>
-
-                <div class="glass-panel p-3 rounded-xl border border-slate-800">
-                    <div id="resLabel2" class="text-[10px] font-bold text-slate-400 uppercase">命中率 (Accuracy)</div>
-                    <div id="resVal2" class="text-xl font-black text-cyan-400">0%</div>
-                </div>
-
-                <div class="glass-panel p-3 rounded-xl border border-slate-800 col-span-2 flex justify-between items-center">
-                    <div>
-                        <div id="resLabel3" class="text-[10px] font-bold text-slate-400 uppercase">連續記錄 / 生存時間</div>
-                        <div id="resVal3" class="text-lg font-black text-pink-400">x0</div>
-                    </div>
-                    <div class="text-right">
-                        <div id="resLabel4" class="text-[10px] font-bold text-slate-400 uppercase">速率 / 撿食統計</div>
-                        <div id="resVal4" class="text-lg font-black text-indigo-300">0.0 KPS</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="flex gap-3 w-full max-w-md">
-                <button id="restartBtn" class="neon-btn-pink flex-1 py-3 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-rotate-right"></i> 再玩一次
-                </button>
-                <button id="mainMenuBtn" class="px-5 py-3 rounded-2xl glass-panel hover:bg-slate-800 font-bold text-slate-200 text-sm flex items-center justify-center gap-2 border border-slate-700">
-                    <i class="fa-solid fa-house text-pink-400"></i> 回首頁
-                </button>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-action" id="btn-restart">再玩一次</button>
+                <button class="btn-action" id="btn-go-home" style="background: #555;">返回首頁</button>
             </div>
         </div>
 
+        <!-- 畫布 -->
+        <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- Game Audio & Controller Engine -->
     <script>
-        /**
-         * Web Audio API Sound Synthesizer
-         */
-        class GameAudioSynth {
-            constructor() {
-                this.ctx = null;
-                this.muted = false;
-            }
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.ctx = new AudioContext();
-                }
-            }
+        // 音效合成 (Web Audio API)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
 
-            playSwoosh() {
-                if (this.muted || !this.ctx) return;
-                const bufferSize = this.ctx.sampleRate * 0.1;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
 
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.1);
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
 
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+            const now = audioCtx.currentTime;
 
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-                noise.start();
-            }
-
-            playSplat(combo = 1) {
-                if (this.muted || !this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                const pitchMult = Math.min(2.5, 1 + combo * 0.05);
-
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(350 * pitchMult, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(60 * pitchMult, this.ctx.currentTime + 0.12);
-
-                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-            }
-
-            playWarning() {
-                if (this.muted || !this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+            if (type === 'hit') {
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(300, this.ctx.currentTime + 0.2);
-
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-            }
-
-            playEat() {
-                if (this.muted || !this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'eat') {
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
-                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08); // A5
-
-                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-            }
-
-            playEndFanfare() {
-                if (this.muted || !this.ctx) return;
-                const notes = [261.63, 329.63, 392.00, 523.25];
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    const startTime = this.ctx.currentTime + idx * 0.08;
-                    gain.gain.setValueAtTime(0.2, startTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.3);
-                });
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'warn') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(400, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
             }
         }
 
-        const synth = new GameAudioSynth();
-
-        // Canvas Setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const gameContainer = document.getElementById('gameContainer');
-
-        let canvasWidth = 0, canvasHeight = 0;
-
+        // 調整 Canvas 尺寸
         function resizeCanvas() {
-            canvasWidth = gameContainer.clientWidth;
-            canvasHeight = gameContainer.clientHeight;
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Game State Variables
-        let activeRole = 'CAT'; // 'CAT' or 'ROACH'
-        let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
+        // 遊戲狀態
+        let gameMode = null; // 'CAT' or 'ROACH'
+        let isPlaying = false;
         let score = 0;
-        let combo = 0;
-        let maxCombo = 0;
-        let hits = 0;
-        let misses = 0;
-        let totalClicks = 0;
-        let startTime = 0;
-        let gameTimer = 30.0;
-        let animationFrameId = null;
+        let timeLeft = 30;
+        let timerInterval = null;
 
-        // Player Roach Controller State (Mode 2)
-        const playerRoach = {
-            x: 0,
-            y: 0,
-            vx: 0,
-            vy: 0,
-            radius: 20,
-            angle: 0,
-            speed: 5.5,
-            boostTimer: 0
-        };
+        // 位置與控制器狀態
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
 
-        const keys = { w: false, a: false, s: false, d: false };
+        // 蟑螂生成安全區域 (避免生成在太上面或太下面)
+        function getSafeBounds() {
+            return {
+                minX: 50,
+                maxX: canvas.width - 50,
+                minY: canvas.height * 0.18, // 避開頂部 18% 區域
+                maxY: canvas.height * 0.82  // 避開底部 18% 區域
+            };
+        }
 
-        // Mouse Controller State
-        const mouse = {
-            x: canvasWidth / 2,
-            y: canvasHeight / 2,
-            recoilTimer: 0,
-            recoilMax: 10
-        };
+        // 蟑螂物件
+        class Roach {
+            constructor(x, y) {
+                this.x = x || getRandom(getSafeBounds().minX, getSafeBounds().maxX);
+                this.y = y || getRandom(getSafeBounds().minY, getSafeBounds().maxY);
+                this.size = 25;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.angle = Math.atan2(this.vy, this.vx);
+            }
 
-        // Targets & Hazards
-        const GRID_ROWS = 4;
-        const GRID_COLS = 5;
-        let activeCockroaches = [];
-        let foodCrumbs = [];
-        let aiPawStrikes = []; // AI Cat Strikes targeting Player Roach
-        let splatParticles = [];
-        let floatingTexts = [];
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
 
-        let highScores = {
-            catScore: parseInt(localStorage.getItem('cat_paw_best_score') || '0'),
-            roachTime: parseFloat(localStorage.getItem('roach_best_time') || '0.0')
-        };
+                const bounds = getSafeBounds();
 
-        /**
-         * Input Handlers
-         */
-        window.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
-        });
+                // 邊界反彈
+                if (this.x < bounds.minX || this.x > bounds.maxX) this.vx *= -1;
+                if (this.y < bounds.minY || this.y > bounds.maxY) this.vy *= -1;
 
-        window.addEventListener('keydown', (e) => {
-            const k = e.key.toLowerCase();
-            if (k === 'w' || k === 'arrowup') keys.w = true;
-            if (k === 'a' || k === 'arrowleft') keys.a = true;
-            if (k === 's' || k === 'arrowdown') keys.s = true;
-            if (k === 'd' || k === 'arrowright') keys.d = true;
-        });
+                // 隨機改變方向
+                if (Math.random() < 0.03) {
+                    this.vx = (Math.random() - 0.5) * 7;
+                    this.vy = (Math.random() - 0.5) * 7;
+                }
 
-        window.addEventListener('keyup', (e) => {
-            const k = e.key.toLowerCase();
-            if (k === 'w' || k === 'arrowup') keys.w = false;
-            if (k === 'a' || k === 'arrowleft') keys.a = false;
-            if (k === 's' || k === 'arrowdown') keys.s = false;
-            if (k === 'd' || k === 'arrowright') keys.d = false;
-        });
+                this.angle = Math.atan2(this.vy, this.vx);
+            }
 
-        canvas.addEventListener('pointerdown', (e) => {
-            if (gameState !== 'PLAYING') return;
-            const rect = canvas.getBoundingClientRect();
-            const px = e.clientX - rect.left;
-            const py = e.clientY - rect.top;
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
 
-            if (activeRole === 'CAT') {
-                handleCatSwat(px, py);
-            } else if (activeRole === 'ROACH') {
-                // In Roach survival mode, touch/click smoothly moves cockroach towards point
-                playerRoach.x = px;
-                playerRoach.y = py;
+                // 觸角
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(10, -3);
+                ctx.lineTo(22, -10);
+                ctx.moveTo(10, 3);
+                ctx.lineTo(22, 10);
+                ctx.stroke();
+
+                // 身體
+                ctx.fillStyle = '#4a2511';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 15, 9, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 蟑螂頭部
+                ctx.fillStyle = '#2b1408';
+                ctx.beginPath();
+                ctx.arc(10, 0, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // 食物屑物件 (蟑螂模式用)
+        class Food {
+            constructor() {
+                const bounds = getSafeBounds();
+                this.x = getRandom(bounds.minX, bounds.maxX);
+                this.y = getRandom(bounds.minY, bounds.maxY);
+                this.size = 8;
+            }
+
+            draw() {
+                ctx.fillStyle = '#ffca28';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 敵方貓爪打擊 (蟑螂模式用)
+        class AIStrike {
+            constructor(targetX, targetY) {
+                this.x = targetX;
+                this.y = targetY;
+                this.radius = 60;
+                this.progress = 0; // 0 到 1 漸變預告
+                this.isStriking = false;
+                this.finished = false;
+            }
+
+            update() {
+                if (!this.isStriking) {
+                    this.progress += 0.03;
+                    if (this.progress >= 1) {
+                        this.isStriking = true;
+                        playSound('hit');
+                    }
+                } else {
+                    this.progress -= 0.1;
+                    if (this.progress <= 0) {
+                        this.finished = true;
+                    }
+                }
+            }
+
+            draw() {
+                if (!this.isStriking) {
+                    // 警示陰影圈
+                    ctx.fillStyle = `rgba(255, 82, 82, ${this.progress * 0.3})`;
+                    ctx.strokeStyle = '#ff5252';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                } else {
+                    // 貓爪落下重擊
+                    drawCatPaw(this.x, this.y, 1.2);
+                }
+            }
+        }
+
+        // 繪製黑貓爪
+        function drawCatPaw(x, y, scale = 1.0) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            // 肉墊影
+            ctx.fillStyle = '#1a1a1a';
+            ctx.beginPath();
+            ctx.arc(0, 0, 35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 主肉墊 (粉紅色)
+            ctx.fillStyle = '#ff80ab';
+            ctx.beginPath();
+            ctx.arc(0, 5, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 四個趾墊
+            const toes = [
+                { x: -18, y: -20 },
+                { x: -7, y: -28 },
+                { x: 7, y: -28 },
+                { x: 18, y: -20 }
+            ];
+
+            toes.forEach(t => {
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+        }
+
+        // 遊戲變數
+        let roaches = [];
+        let foods = [];
+        let aiStrikes = [];
+        let playerRoach = { x: 0, y: 0, vx: 0, vy: 0, angle: 0 };
+
+        function getRandom(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // --- 觸控與控制邏輯 (修復移動與座標) ---
+
+        function handleInputMove(px, py) {
+            mouseX = px;
+            mouseY = py;
+
+            if (gameMode === 'ROACH' && isPlaying) {
+                if (!joystickActive) {
+                    playerRoach.x = px;
+                    playerRoach.y = py;
+                }
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => handleInputMove(e.clientX, e.clientY));
+
+        // 修復手機觸控滑動跟隨
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                handleInputMove(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchstart', (e) => {
+            initAudio();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                handleInputMove(touch.clientX, touch.clientY);
+            }
+            if (gameMode === 'CAT' && isPlaying) {
+                checkCatHit(mouseX, mouseY);
+            }
+        }, { passive: false });
+
+        window.addEventListener('click', (e) => {
+            initAudio();
+            if (gameMode === 'CAT' && isPlaying) {
+                checkCatHit(e.clientX, e.clientY);
             }
         });
 
-        /**
-         * Mode 1: Cat Swat Logic
-         */
-        function handleCatSwat(clickX, clickY) {
-            synth.init();
-            mouse.recoilTimer = mouse.recoilMax;
-            totalClicks++;
-
-            let hitIndex = -1;
-            for (let i = activeCockroaches.length - 1; i >= 0; i--) {
-                const target = activeCockroaches[i];
-                if (Math.hypot(clickX - target.x, clickY - target.y) <= target.radius + 14) {
-                    hitIndex = i;
+        // 貓爪拍打命中判定
+        function checkCatHit(hx, hy) {
+            playSound('hit');
+            for (let i = roaches.length - 1; i >= 0; i--) {
+                const r = roaches[i];
+                const dist = Math.hypot(r.x - hx, r.y - hy);
+                if (dist < 55) { // 加大命中範圍
+                    roaches.splice(i, 1);
+                    score += 100;
+                    document.getElementById('val-score').innerText = score;
+                    // 重新生成一隻
+                    roaches.push(new Roach());
                     break;
                 }
             }
-
-            if (hitIndex !== -1) {
-                const target = activeCockroaches[hitIndex];
-                hits++;
-                combo++;
-                maxCombo = Math.max(maxCombo, combo);
-                const gained = 100 + Math.min(combo * 20, 400);
-                score += gained;
-
-                synth.playSplat(combo);
-                spawnSplat(target.x, target.y, '#84cc16');
-                addFloatingText(target.x, target.y - 10, `+${gained}`, '#f43f5e');
-
-                activeCockroaches.splice(hitIndex, 1);
-                spawnGridRoach();
-            } else {
-                misses++;
-                combo = 0;
-                synth.playSwoosh();
-                addFloatingText(clickX, clickY, 'MISS!', '#94a3b8');
-            }
         }
 
-        /**
-         * Grid Target Spawner for Mode 1
-         */
-        function spawnGridRoach() {
-            const taken = new Set(activeCockroaches.map(c => `${c.gridX},${c.gridY}`));
-            const available = [];
-
-            for (let r = 0; r < GRID_ROWS; r++) {
-                for (let c = 0; c < GRID_COLS; c++) {
-                    if (!taken.has(`${c},${r}`)) available.push({ x: c, y: r });
-                }
-            }
-
-            if (available.length > 0) {
-                const pos = available[Math.floor(Math.random() * available.length)];
-                const cellW = canvasWidth / GRID_COLS;
-                const cellH = canvasHeight / GRID_ROWS;
-                
-                activeCockroaches.push({
-                    gridX: pos.x,
-                    gridY: pos.y,
-                    x: cellW * pos.x + cellW / 2,
-                    y: cellH * pos.y + cellH / 2,
-                    radius: 24,
-                    angle: Math.random() * Math.PI * 2,
-                    legAngle: 0
-                });
-            }
-        }
-
-        /**
-         * Mode 2: Food & AI Cat Strikes Spawner
-         */
-        function spawnFoodCrumb() {
-            foodCrumbs.push({
-                x: 40 + Math.random() * (canvasWidth - 80),
-                y: 40 + Math.random() * (canvasHeight - 80),
-                radius: 8 + Math.random() * 4,
-                color: Math.random() > 0.5 ? '#f59e0b' : '#38bdf8'
-            });
-        }
-
-        function triggerAIPawStrike() {
-            if (gameState !== 'PLAYING') return;
-
-            // Target around player's current position with slight lead
-            const targetX = playerRoach.x + (Math.random() - 0.5) * 80;
-            const targetY = playerRoach.y + (Math.random() - 0.5) * 80;
-
-            aiPawStrikes.push({
-                x: Math.max(50, Math.min(canvasWidth - 50, targetX)),
-                y: Math.max(50, Math.min(canvasHeight - 50, targetY)),
-                radius: 65,
-                timer: 0,
-                maxTimer: 45, // 0.75 seconds warning
-                swatting: false
-            });
-
-            synth.playWarning();
-        }
-
-        /**
-         * Particle & Floating Text Helpers
-         */
-        function spawnSplat(x, y, color) {
-            for (let i = 0; i < 16; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const spd = Math.random() * 6 + 2;
-                splatParticles.push({
-                    x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-                    radius: Math.random() * 4 + 2, color: color, alpha: 1.0, decay: 0.03
-                });
-            }
-        }
-
-        function addFloatingText(x, y, text, color) {
-            floatingTexts.push({ x, y, text, color, alpha: 1.0, vy: -2 });
-        }
-
-        /**
-         * Render Flooring Pattern
-         */
-        function drawTileFloor() {
-            ctx.fillStyle = '#0d111e';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            const cellW = canvasWidth / GRID_COLS;
-            const cellH = canvasHeight / GRID_ROWS;
-
-            ctx.lineWidth = 1.5;
-            ctx.strokeStyle = 'rgba(244, 114, 182, 0.08)';
-
-            for (let c = 0; c <= GRID_COLS; c++) {
-                ctx.beginPath();
-                ctx.moveTo(c * cellW, 0); ctx.lineTo(c * cellW, canvasHeight); ctx.stroke();
-            }
-            for (let r = 0; r <= GRID_ROWS; r++) {
-                ctx.beginPath();
-                ctx.moveTo(0, r * cellH); ctx.lineTo(canvasWidth, r * cellH); ctx.stroke();
-            }
-        }
-
-        /**
-         * Draw Cockroach
-         */
-        function drawCockroach(x, y, angle, radius = 22, isPlayer = false) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-
-            // Highlight ring for player cockroach
-            if (isPlayer) {
-                ctx.beginPath();
-                ctx.arc(0, 0, radius + 10, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-
-            // Legs
-            ctx.strokeStyle = '#451a03';
-            ctx.lineWidth = 2.5;
-            for (let i = -1; i <= 1; i++) {
-                ctx.beginPath();
-                ctx.moveTo(-radius * 0.4, i * 8); ctx.lineTo(-radius * 1.1, i * 10 - 4); ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(radius * 0.4, i * 8); ctx.lineTo(radius * 1.1, i * 10 - 4); ctx.stroke();
-            }
-
-            // Shell Body
-            const gradient = ctx.createLinearGradient(0, -radius, 0, radius);
-            gradient.addColorStop(0, isPlayer ? '#f59e0b' : '#78350f');
-            gradient.addColorStop(1, '#290d00');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, radius * 0.65, radius * 1.05, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#1c0a00';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Head
-            ctx.beginPath();
-            ctx.ellipse(0, -radius * 0.85, radius * 0.4, radius * 0.3, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#1c0a00';
-            ctx.fill();
-
-            // Antennae
-            ctx.strokeStyle = '#78350f';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(-2, -radius * 1.1); ctx.quadraticCurveTo(-radius, -radius * 1.8, -radius * 1.3, -radius * 2.2);
-            ctx.moveTo(2, -radius * 1.1); ctx.quadraticCurveTo(radius, -radius * 1.8, radius * 1.3, -radius * 2.2);
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        /**
-         * Render Cat Paw Graphics
-         */
-        function drawCatPaw(x, y, recoilAmount = 0, isWarning = false) {
-            ctx.save();
-            ctx.translate(x, y + recoilAmount + 25);
-
-            // Paw Shadow
-            ctx.beginPath();
-            ctx.ellipse(0, 25, 40, 24, 0, 0, Math.PI * 2);
-            ctx.fillStyle = isWarning ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 0, 0, 0.35)';
-            ctx.fill();
-
-            // Black Fur Arm
-            ctx.beginPath();
-            ctx.moveTo(-24, 20); ctx.lineTo(-28, 140); ctx.lineTo(28, 140); ctx.lineTo(24, 20);
-            ctx.fillStyle = '#111827'; ctx.fill();
-            ctx.strokeStyle = '#374151'; ctx.lineWidth = 2; ctx.stroke();
-
-            // Palm Pad
-            ctx.beginPath();
-            ctx.ellipse(0, 10, 26, 20, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#111827'; ctx.fill(); ctx.stroke();
-
-            // Pink Toe Beans
-            ctx.beginPath();
-            ctx.ellipse(0, 12, 14, 10, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#f472b6'; ctx.fill();
-
-            const beans = [
-                { x: -18, y: -8, rx: 5.5, ry: 7 },
-                { x: -7,  y: -16, rx: 6,   ry: 7.5 },
-                { x: 7,   y: -16, rx: 6,   ry: 7.5 },
-                { x: 18,  y: -8, rx: 5.5, ry: 7 }
-            ];
-            beans.forEach(b => {
-                ctx.beginPath();
-                ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, Math.PI * 2);
-                ctx.fillStyle = '#f472b6'; ctx.fill();
-            });
-
-            ctx.restore();
-        }
-
-        /**
-         * Main Frame Animation Loop
-         */
-        function gameLoop() {
-            if (gameState !== 'PLAYING') return;
-
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            drawTileFloor();
-
-            const now = performance.now();
-            const elapsed = (now - startTime) / 1000;
-
-            if (activeRole === 'CAT') {
-                // --- MODE 1: CAT HUNTER ---
-                gameTimer = 30.0 - elapsed;
-                if (gameTimer <= 0) {
-                    gameTimer = 0;
-                    endGame();
-                    return;
-                }
-
-                // Render Active Grid Cockroaches
-                activeCockroaches.forEach(target => {
-                    target.angle += (Math.random() - 0.5) * 0.2;
-                    drawCockroach(target.x, target.y, target.angle, target.radius);
-                });
-
-                // Cat Paw Cursor
-                const recoil = mouse.recoilTimer > 0 ? (mouse.recoilTimer / mouse.recoilMax) * 14 : 0;
-                if (mouse.recoilTimer > 0) mouse.recoilTimer--;
-                drawCatPaw(mouse.x, mouse.y, recoil);
-
-            } else {
-                // --- MODE 2: ROACH SURVIVAL ---
-                gameTimer = elapsed; // Time survived
-
-                // Keyboard movement
-                let dx = 0, dy = 0;
-                if (keys.w) dy -= 1;
-                if (keys.s) dy += 1;
-                if (keys.a) dx -= 1;
-                if (keys.d) dx += 1;
-
-                if (dx !== 0 || dy !== 0) {
-                    const len = Math.hypot(dx, dy);
-                    const speed = playerRoach.speed + (playerRoach.boostTimer > 0 ? 3 : 0);
-                    playerRoach.x += (dx / len) * speed;
-                    playerRoach.y += (dy / len) * speed;
-                    playerRoach.angle = Math.atan2(dy, dx) + Math.PI / 2;
-                }
-
-                // Keep player in bounds
-                playerRoach.x = Math.max(30, Math.min(canvasWidth - 30, playerRoach.x));
-                playerRoach.y = Math.max(30, Math.min(canvasHeight - 30, playerRoach.y));
-
-                if (playerRoach.boostTimer > 0) playerRoach.boostTimer--;
-
-                // Spawn Food Crumbs
-                if (foodCrumbs.length < 5 && Math.random() < 0.03) spawnFoodCrumb();
-
-                // Draw Food Crumbs
-                for (let i = foodCrumbs.length - 1; i >= 0; i--) {
-                    const food = foodCrumbs[i];
-                    ctx.beginPath();
-                    ctx.arc(food.x, food.y, food.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = food.color;
-                    ctx.fill();
-
-                    // Pickup collision
-                    if (Math.hypot(playerRoach.x - food.x, playerRoach.y - food.y) < playerRoach.radius + food.radius) {
-                        synth.playEat();
-                        score += 150;
-                        playerRoach.boostTimer = 60; // Speed boost
-                        addFloatingText(food.x, food.y, '+150 SPEED!', '#38bdf8');
-                        foodCrumbs.splice(i, 1);
-                    }
-                }
-
-                // AI Cat Strike Logic
-                if (Math.random() < 0.035 + Math.min(elapsed * 0.002, 0.05)) {
-                    triggerAIPawStrike();
-                }
-
-                // Process AI Strikes
-                for (let i = aiPawStrikes.length - 1; i >= 0; i--) {
-                    const strike = aiPawStrikes[i];
-                    strike.timer++;
-
-                    // Warning Indicator Circle
-                    const progress = strike.timer / strike.maxTimer;
-                    ctx.beginPath();
-                    ctx.arc(strike.x, strike.y, strike.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(239, 68, 68, ${0.15 + progress * 0.25})`;
-                    ctx.fill();
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-
-                    // Crosshair pulse
-                    ctx.beginPath();
-                    ctx.arc(strike.x, strike.y, strike.radius * (1 - progress), 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
-                    ctx.stroke();
-
-                    // Paw Strike Impact!
-                    if (strike.timer >= strike.maxTimer) {
-                        synth.playSplat(1);
-                        drawCatPaw(strike.x, strike.y - 20, 0, true);
-
-                        // Check if Player Roach was swatted
-                        if (Math.hypot(playerRoach.x - strike.x, playerRoach.y - strike.y) <= strike.radius + 10) {
-                            spawnSplat(playerRoach.x, playerRoach.y, '#f59e0b');
-                            endGame();
-                            return;
-                        }
-
-                        aiPawStrikes.splice(i, 1);
-                    }
-                }
-
-                // Render Player Roach
-                drawCockroach(playerRoach.x, playerRoach.y, playerRoach.angle, playerRoach.radius, true);
-            }
-
-            // Update & Render Particles
-            for (let i = splatParticles.length - 1; i >= 0; i--) {
-                const p = splatParticles[i];
-                p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
-                if (p.alpha <= 0) { splatParticles.splice(i, 1); continue; }
-                ctx.save();
-                ctx.globalAlpha = p.alpha;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color; ctx.fill();
-                ctx.restore();
-            }
-
-            // Update & Render Floating Text
-            for (let i = floatingTexts.length - 1; i >= 0; i--) {
-                const ft = floatingTexts[i];
-                ft.y += ft.vy; ft.alpha -= 0.025;
-                if (ft.alpha <= 0) { floatingTexts.splice(i, 1); continue; }
-                ctx.save();
-                ctx.globalAlpha = ft.alpha;
-                ctx.fillStyle = ft.color;
-                ctx.font = '900 15px Orbitron';
-                ctx.textAlign = 'center';
-                ctx.fillText(ft.text, ft.x, ft.y);
-                ctx.restore();
-            }
-
-            updateHUD();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        /**
-         * Dynamic HUD Update
-         */
-        function updateHUD() {
-            document.getElementById('scoreText').innerText = score;
-
-            if (activeRole === 'CAT') {
-                document.getElementById('timerText').innerText = `${Math.max(0, gameTimer).toFixed(1)}s`;
-                const accuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 100;
-                document.getElementById('hudRightValue').innerText = `${accuracy}%`;
-                
-                const comboBadge = document.getElementById('comboBadge');
-                if (combo > 1) {
-                    document.getElementById('comboText').innerText = `x${combo}`;
-                    comboBadge.classList.remove('opacity-0', 'scale-90');
-                } else {
-                    comboBadge.classList.add('opacity-0', 'scale-90');
-                }
-            } else {
-                document.getElementById('timerText').innerText = `${gameTimer.toFixed(1)}s`;
-                document.getElementById('hudRightValue').innerText = `${(score / Math.max(1, gameTimer)).toFixed(0)} PTS/s`;
-            }
-        }
-
-        /**
-         * Start Game Function
-         */
-        function startGame(role) {
-            synth.init();
-            activeRole = role;
-            gameState = 'PLAYING';
-            score = 0;
-            combo = 0;
-            maxCombo = 0;
-            hits = 0;
-            misses = 0;
-            totalClicks = 0;
-            gameTimer = role === 'CAT' ? 30.0 : 0.0;
-
-            activeCockroaches = [];
-            foodCrumbs = [];
-            aiPawStrikes = [];
-            splatParticles = [];
-            floatingTexts = [];
-
-            startTime = performance.now();
-
-            // Set Roach Initial Position
-            playerRoach.x = canvasWidth / 2;
-            playerRoach.y = canvasHeight / 2;
-
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden');
-            document.getElementById('hud').classList.remove('hidden');
-
-            if (activeRole === 'CAT') {
-                document.getElementById('hudModeIcon').className = 'fa-solid fa-paw text-pink-400 text-lg';
-                document.getElementById('hudRightLabel').innerText = 'ACCURACY';
-                document.getElementById('hudRightIcon').className = 'fa-solid fa-bullseye text-cyan-400 text-lg';
-                for (let i = 0; i < 4; i++) spawnGridRoach();
-            } else {
-                document.getElementById('hudModeIcon').className = 'fa-solid fa-bug text-amber-400 text-lg';
-                document.getElementById('hudRightLabel').innerText = 'SURVIVAL RATE';
-                document.getElementById('hudRightIcon').className = 'fa-solid fa-bolt text-amber-400 text-lg';
-            }
-
-            cancelAnimationFrame(animationFrameId);
-            gameLoop();
-        }
-
-        /**
-         * Return to Home Screen
-         */
-        function returnToHome() {
-            gameState = 'START';
-            cancelAnimationFrame(animationFrameId);
-            document.getElementById('hud').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden');
-            document.getElementById('startScreen').classList.remove('hidden');
-
-            // Refresh High Scores display
-            document.getElementById('bestCatScore').innerText = highScores.catScore;
-            document.getElementById('bestRoachTime').innerText = `${highScores.roachTime.toFixed(1)}s`;
-        }
-
-        /**
-         * End Game Results Evaluation
-         */
-        function endGame() {
-            gameState = 'GAMEOVER';
-            cancelAnimationFrame(animationFrameId);
-            synth.playEndFanfare();
-
-            const elapsedSec = (performance.now() - startTime) / 1000;
-
-            if (activeRole === 'CAT') {
-                if (score > highScores.catScore) {
-                    highScores.catScore = score;
-                    localStorage.setItem('cat_paw_best_score', highScores.catScore.toString());
-                }
-                const accuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 0;
-                
-                document.getElementById('rankBadge').innerText = score >= 4000 ? 'S-RANK' : (score >= 2500 ? 'A-RANK' : 'B-RANK');
-                document.getElementById('rankSubtitle').innerText = '貓爪獵人成績評定';
-                document.getElementById('resScore').innerText = score;
-                document.getElementById('resLabel2').innerText = '命中率 (Accuracy)';
-                document.getElementById('resVal2').innerText = `${accuracy}%`;
-                document.getElementById('resLabel3').innerText = '最高連續擊殺 (Max Combo)';
-                document.getElementById('resVal3').innerText = `x${maxCombo}`;
-                document.getElementById('resLabel4').innerText = '每秒擊殺 (KPS)';
-                document.getElementById('resVal4').innerText = `${(hits / elapsedSec).toFixed(1)} KPS`;
-
-            } else {
-                if (elapsedSec > highScores.roachTime) {
-                    highScores.roachTime = elapsedSec;
-                    localStorage.setItem('roach_best_time', highScores.roachTime.toString());
-                }
-
-                document.getElementById('rankBadge').innerText = elapsedSec >= 30 ? 'S-RANK' : (elapsedSec >= 15 ? 'A-RANK' : 'B-RANK');
-                document.getElementById('rankSubtitle').innerText = '蟑螂極限生存評定';
-                document.getElementById('resScore').innerText = score;
-                document.getElementById('resLabel2').innerText = '生存時間 (Survival Time)';
-                document.getElementById('resVal2').innerText = `${elapsedSec.toFixed(1)}s`;
-                document.getElementById('resLabel3').innerText = '最佳歷史生存';
-                document.getElementById('resVal3').innerText = `${highScores.roachTime.toFixed(1)}s`;
-                document.getElementById('resLabel4').innerText = '評級效率';
-                document.getElementById('resVal4').innerText = `${(score / Math.max(1, elapsedSec)).toFixed(0)} PTS/s`;
-            }
-
-            document.getElementById('hud').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.remove('hidden');
-        }
-
-        // Event Bindings
-        document.getElementById('btnRoleCat').addEventListener('click', () => startGame('CAT'));
-        document.getElementById('btnRoleRoach').addEventListener('click', () => startGame('ROACH'));
-        document.getElementById('restartBtn').addEventListener('click', () => startGame(activeRole));
-        
-        // Return Home Buttons
-        document.getElementById('hudHomeBtn').addEventListener('click', returnToHome);
-        document.getElementById('mainMenuBtn').addEventListener('click', returnToHome);
-
-        // Sound Mute Toggle
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
-            synth.muted = !synth.muted;
-            document.getElementById('soundIcon').className = synth.muted ? 'fa-solid fa-volume-xmark text-slate-500' : 'fa-solid fa-volume-high text-pink-400';
+        // --- 虛擬搖桿 (Joystick) 控制 ---
+        const joyWrapper = document.getElementById('joystick-wrapper');
+        const joyStick = document.getElementById('joystick-stick');
+        let joystickActive = false;
+        let joyVector = { x: 0, y: 0 };
+
+        joyWrapper.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            joystickActive = true;
         });
 
-        // Initialize Menu View
-        returnToHome();
+        window.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            const touch = Array.from(e.touches).find(t => t.target === joyWrapper || joyWrapper.contains(t.target));
+            if (!touch) return;
+
+            const rect = joyWrapper.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = rect.width / 2;
+
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+
+            joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joyVector.x = dx / maxDist;
+            joyVector.y = dy / maxDist;
+        });
+
+        window.addEventListener('touchend', () => {
+            if (joystickActive) {
+                joystickActive = false;
+                joyStick.style.transform = `translate(0px, 0px)`;
+                joyVector = { x: 0, y: 0 };
+            }
+        });
+
+        // 鍵盤控制 (蟑螂模式)
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // --- 遊戲流程控制 ---
+
+        function startGame(mode) {
+            initAudio();
+            gameMode = mode;
+            isPlaying = true;
+            score = 0;
+            timeLeft = 30;
+
+            document.getElementById('val-score').innerText = score;
+            document.getElementById('val-time').innerText = timeLeft;
+
+            document.getElementById('menu-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            roaches = [];
+            foods = [];
+            aiStrikes = [];
+
+            if (gameMode === 'CAT') {
+                document.getElementById('joystick-wrapper').classList.add('hidden');
+                // 生成 5 隻蟑螂
+                for (let i = 0; i < 5; i++) {
+                    roaches.push(new Roach());
+                }
+            } else {
+                // 蟑螂逃亡模式
+                document.getElementById('joystick-wrapper').classList.remove('hidden');
+                playerRoach = {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: 0,
+                    vy: 0,
+                    angle: 0
+                };
+                // 生成 4 個餅乾屑
+                for (let i = 0; i < 4; i++) {
+                    foods.push(new Food());
+                }
+            }
+
+            // 倒數計時器
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('val-time').innerText = timeLeft;
+
+                if (gameMode === 'ROACH' && isPlaying) {
+                    const bounds = getSafeBounds();
+                    const strikeX = Math.random() < 0.6 ? playerRoach.x : getRandom(bounds.minX, bounds.maxX);
+                    const strikeY = Math.random() < 0.6 ? playerRoach.y : getRandom(bounds.minY, bounds.maxY);
+                    aiStrikes.push(new AIStrike(strikeX, strikeY));
+                    playSound('warn');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame(true);
+                }
+            }, 1000);
+        }
+
+        function endGame(survived = true) {
+            isPlaying = false;
+            clearInterval(timerInterval);
+
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+            document.getElementById('go-score').innerText = score;
+
+            const title = document.getElementById('go-title');
+            const desc = document.getElementById('go-desc');
+
+            if (gameMode === 'CAT') {
+                title.innerText = "時間到！";
+                desc.innerText = `你成功拍打捕獲了大量蟑螂！`;
+            } else {
+                if (survived) {
+                    title.innerText = "逃亡成功！🎉";
+                    desc.innerText = "你成功躲過了黑貓的所有連續重擊！";
+                } else {
+                    title.innerText = "你被貓爪扁扁了！💀";
+                    desc.innerText = "逃亡失敗，黑貓的反應速度太快了！";
+                }
+            }
+        }
+
+        function goHome() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('joystick-wrapper').classList.add('hidden');
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        }
+
+        // --- 核心遊戲循環 ---
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isPlaying) {
+                if (gameMode === 'CAT') {
+                    // 貓爪模式：更新並繪製蟑螂
+                    roaches.forEach(r => {
+                        r.update();
+                        r.draw();
+                    });
+                    // 繪製玩家貓爪
+                    drawCatPaw(mouseX, mouseY, 1.0);
+
+                } else if (gameMode === 'ROACH') {
+                    // 蟑螂逃亡模式：更新玩家蟑螂位置
+                    let speed = 5;
+
+                    if (joystickActive) {
+                        playerRoach.x += joyVector.x * speed;
+                        playerRoach.y += joyVector.y * speed;
+                        playerRoach.angle = Math.atan2(joyVector.y, joyVector.x);
+                    }
+
+                    if (keys['ArrowLeft'] || keys['a']) playerRoach.x -= speed;
+                    if (keys['ArrowRight'] || keys['d']) playerRoach.x += speed;
+                    if (keys['ArrowUp'] || keys['w']) playerRoach.y -= speed;
+                    if (keys['ArrowDown'] || keys['s']) playerRoach.y += speed;
+
+                    // 限制安全區域
+                    const bounds = getSafeBounds();
+                    playerRoach.x = Math.max(bounds.minX, Math.min(bounds.maxX, playerRoach.x));
+                    playerRoach.y = Math.max(bounds.minY, Math.min(bounds.maxY, playerRoach.y));
+
+                    // 繪製餅乾屑並判定吃食物
+                    foods.forEach((f, idx) => {
+                        f.draw();
+                        if (Math.hypot(f.x - playerRoach.x, f.y - playerRoach.y) < 20) {
+                            score += 50;
+                            document.getElementById('val-score').innerText = score;
+                            playSound('eat');
+                            foods[idx] = new Food();
+                        }
+                    });
+
+                    // 更新並繪製 AI 貓爪打擊
+                    for (let i = aiStrikes.length - 1; i >= 0; i--) {
+                        const strike = aiStrikes[i];
+                        strike.update();
+                        strike.draw();
+
+                        if (strike.isStriking) {
+                            if (Math.hypot(strike.x - playerRoach.x, strike.y - playerRoach.y) < strike.radius) {
+                                endGame(false);
+                            }
+                        }
+
+                        if (strike.finished) {
+                            aiStrikes.splice(i, 1);
+                        }
+                    }
+
+                    // 繪製玩家蟑螂
+                    ctx.save();
+                    ctx.translate(playerRoach.x, playerRoach.y);
+                    if (joystickActive) ctx.rotate(playerRoach.angle);
+                    ctx.fillStyle = '#ff5722';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#bf360c';
+                    ctx.beginPath();
+                    ctx.arc(10, 0, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- UI 事件綁定 ---
+        document.getElementById('mode-cat').addEventListener('click', () => startGame('CAT'));
+        document.getElementById('mode-roach').addEventListener('click', () => startGame('ROACH'));
+        document.getElementById('btn-hud-home').addEventListener('click', goHome);
+        document.getElementById('btn-go-home').addEventListener('click', goHome);
+        document.getElementById('btn-restart').addEventListener('click', () => startGame(gameMode));
+
+        // 啟動繪製循環
+        loop();
     </script>
 </body>
 </html>

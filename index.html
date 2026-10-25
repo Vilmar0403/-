@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>黑貓vs蟑螂</title>
+    <title>黑貓拍拍：爆汁蟑螂 ASMR 紓壓大作戰</title>
     <style>
         * {
             box-sizing: border-box;
@@ -733,4 +733,254 @@
                     // 1. Combo 計算
                     combo++;
                     clearTimeout(comboTimer);
-                    comboTimer = setTimeout(() => { combo = 0; updateHUD(); }, 1
+                    comboTimer = setTimeout(() => { combo = 0; updateHUD(); }, 1200);
+
+                    // 2. 音效與震動
+                    playASMRSound('splatter', combo);
+                    shakeTime = 6;
+
+                    // 3. 噴汁特效 (Stain & Particles)
+                    stains.push(new JuiceStain(r.x, r.y));
+                    for (let p = 0; p < 25; p++) {
+                        particles.push(new JuiceParticle(r.x, r.y));
+                    }
+
+                    // 4. 分數與飄字
+                    const pts = r.type === 'FAST' ? 200 : 100;
+                    score += pts * (1 + Math.floor(combo / 5));
+                    popTexts.push(new PopText(r.x, r.y, `+${pts} ${combo > 1 ? combo + 'x!' : ''}`));
+
+                    // 重新生成
+                    roaches.splice(i, 1);
+                    roaches.push(new Roach(Math.random() < 0.3 ? 'FAST' : 'NORMAL'));
+                    updateHUD();
+                    break;
+                }
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('val-score').innerText = score;
+            document.getElementById('val-combo').innerText = combo;
+        }
+
+        // 虛擬搖桿
+        const joyWrapper = document.getElementById('joystick-wrapper');
+        const joyStick = document.getElementById('joystick-stick');
+        let joystickActive = false;
+        let joyVector = { x: 0, y: 0 };
+
+        joyWrapper.addEventListener('touchstart', (e) => { e.stopPropagation(); joystickActive = true; });
+        window.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            const touch = Array.from(e.touches).find(t => t.target === joyWrapper || joyWrapper.contains(t.target));
+            if (!touch) return;
+            const rect = joyWrapper.getBoundingClientRect();
+            let dx = touch.clientX - (rect.left + rect.width / 2);
+            let dy = touch.clientY - (rect.top + rect.height / 2);
+            const dist = Math.hypot(dx, dy);
+            const maxD = rect.width / 2;
+            if (dist > maxD) { dx = (dx / dist) * maxD; dy = (dy / dist) * maxD; }
+            joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joyVector.x = dx / maxD;
+            joyVector.y = dy / maxD;
+        });
+        window.addEventListener('touchend', () => {
+            if (joystickActive) {
+                joystickActive = false;
+                joyStick.style.transform = `translate(0px, 0px)`;
+                joyVector = { x: 0, y: 0 };
+            }
+        });
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // 流程控制
+        function startGame(mode) {
+            initAudio();
+            gameMode = mode;
+            isPlaying = true;
+            score = 0;
+            combo = 0;
+            timeLeft = 30;
+
+            updateHUD();
+            document.getElementById('val-time').innerText = timeLeft;
+
+            document.getElementById('menu-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            roaches = []; foods = []; aiStrikes = []; particles = []; stains = []; popTexts = [];
+
+            if (gameMode === 'CAT') {
+                document.getElementById('joystick-wrapper').classList.add('hidden');
+                for (let i = 0; i < 6; i++) {
+                    roaches.push(new Roach(i % 2 === 0 ? 'FAST' : 'NORMAL'));
+                }
+            } else {
+                document.getElementById('joystick-wrapper').classList.remove('hidden');
+                playerRoach = { x: canvas.width / 2, y: canvas.height / 2, angle: 0 };
+                for (let i = 0; i < 4; i++) foods.push(new Food());
+            }
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('val-time').innerText = timeLeft;
+
+                if (gameMode === 'ROACH' && isPlaying) {
+                    const bounds = getSafeBounds();
+                    const tx = Math.random() < 0.65 ? playerRoach.x : getRandom(bounds.minX, bounds.maxX);
+                    const ty = Math.random() < 0.65 ? playerRoach.y : getRandom(bounds.minY, bounds.maxY);
+                    aiStrikes.push(new AIStrike(tx, ty));
+                    playASMRSound('warn');
+                }
+
+                if (timeLeft <= 0) endGame(true);
+            }, 1000);
+        }
+
+        function endGame(survived = true) {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+            document.getElementById('go-score').innerText = score;
+
+            const title = document.getElementById('go-title');
+            const desc = document.getElementById('go-desc');
+
+            if (gameMode === 'CAT') {
+                title.innerText = "紓壓爆汁完成！✨";
+                desc.innerText = `你一共拍爆了無數蟑螂，產生了滿屏噴汁打擊！`;
+            } else {
+                if (survived) {
+                    title.innerText = "逃亡成功！🎉";
+                    desc.innerText = "你的身手極度敏捷，順利躲過了貓爪的連續重擊！";
+                } else {
+                    title.innerText = "啪嘰！你被拍爆了！💀";
+                    desc.innerText = "爆漿噴汁！黑貓的反應速度實在太快了。";
+                }
+            }
+        }
+
+        function goHome() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('joystick-wrapper').classList.add('hidden');
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        }
+
+        // 主畫面繪製循環
+        function loop() {
+            ctx.save();
+
+            // 畫面震撼 (Screen Shake)
+            if (shakeTime > 0) {
+                const sx = (Math.random() - 0.5) * shakeTime * 2;
+                const sy = (Math.random() - 0.5) * shakeTime * 2;
+                ctx.translate(sx, sy);
+                shakeTime--;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製地上的汁液印記
+            stains.forEach(s => s.draw());
+
+            if (isPlaying) {
+                if (gameMode === 'CAT') {
+                    roaches.forEach(r => { r.update(); r.draw(); });
+                    drawCatPaw(mouseX, mouseY, 1.0);
+                } else if (gameMode === 'ROACH') {
+                    let speed = 5.5;
+                    if (joystickActive) {
+                        playerRoach.x += joyVector.x * speed;
+                        playerRoach.y += joyVector.y * speed;
+                        playerRoach.angle = Math.atan2(joyVector.y, joyVector.x);
+                    }
+                    if (keys['ArrowLeft'] || keys['a']) playerRoach.x -= speed;
+                    if (keys['ArrowRight'] || keys['d']) playerRoach.x += speed;
+                    if (keys['ArrowUp'] || keys['w']) playerRoach.y -= speed;
+                    if (keys['ArrowDown'] || keys['s']) playerRoach.y += speed;
+
+                    const bounds = getSafeBounds();
+                    playerRoach.x = Math.max(bounds.minX, Math.min(bounds.maxX, playerRoach.x));
+                    playerRoach.y = Math.max(bounds.minY, Math.min(bounds.maxY, playerRoach.y));
+
+                    foods.forEach((f, idx) => {
+                        f.draw();
+                        if (Math.hypot(f.x - playerRoach.x, f.y - playerRoach.y) < 22) {
+                            score += 50;
+                            updateHUD();
+                            playASMRSound('eat');
+                            foods[idx] = new Food();
+                        }
+                    });
+
+                    for (let i = aiStrikes.length - 1; i >= 0; i--) {
+                        const strike = aiStrikes[i];
+                        strike.update();
+                        strike.draw();
+
+                        if (strike.isStriking) {
+                            if (Math.hypot(strike.x - playerRoach.x, strike.y - playerRoach.y) < strike.radius) {
+                                // 爆汁死亡
+                                stains.push(new JuiceStain(playerRoach.x, playerRoach.y));
+                                for (let p = 0; p < 30; p++) particles.push(new JuiceParticle(playerRoach.x, playerRoach.y));
+                                endGame(false);
+                            }
+                        }
+                        if (strike.finished) aiStrikes.splice(i, 1);
+                    }
+
+                    // 玩家蟑螂繪製
+                    ctx.save();
+                    ctx.translate(playerRoach.x, playerRoach.y);
+                    if (joystickActive) ctx.rotate(playerRoach.angle);
+                    ctx.fillStyle = '#ff3d00';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#dd2c00';
+                    ctx.beginPath();
+                    ctx.arc(10, 0, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // 繪製爆汁飛濺粒子
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.update();
+                    p.draw();
+                    if (p.alpha <= 0) particles.splice(i, 1);
+                }
+
+                // 繪製飄字
+                for (let i = popTexts.length - 1; i >= 0; i--) {
+                    const pt = popTexts[i];
+                    pt.update();
+                    pt.draw();
+                    if (pt.alpha <= 0) popTexts.splice(i, 1);
+                }
+            }
+
+            ctx.restore();
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('mode-cat').addEventListener('click', () => startGame('CAT'));
+        document.getElementById('mode-roach').addEventListener('click', () => startGame('ROACH'));
+        document.getElementById('btn-hud-home').addEventListener('click', goHome);
+        document.getElementById('btn-go-home').addEventListener('click', goHome);
+        document.getElementById('btn-restart').addEventListener('click', () => startGame(gameMode));
+
+        loop();
+    </script>
+</body>
+</html>
